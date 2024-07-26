@@ -1,0 +1,77 @@
+---
+import ProgressBar from './ProgressBar.astro';
+import ErrorMessage from './ErrorMessage.astro';
+---
+
+<form id="uploadForm" enctype="multipart/form-data">
+    <input type="file" name="file" id="fileInput" style="display: none;">
+    <div id="pasteArea" style="border: 2px dashed #ccc; padding: 20px; text-align: center; cursor: pointer;">
+        <p>Drag and drop files here, or paste an image</p>
+        <div id="previewContainer"></div>
+    </div>
+    <ErrorMessage id="fileSizeError" />
+    <button type="submit">Upload</button>
+    <ProgressBar />
+    <div id="uploadStatus"></div>
+</form>
+
+<script>
+    import { validateFileSize, previewFile, handleFile } from '../utils/fileHelpers';
+
+    const pasteArea = document.getElementById('pasteArea') as HTMLDivElement;
+    const fileInput = document.getElementById('fileInput') as HTMLInputElement;
+    const uploadForm = document.getElementById('uploadForm') as HTMLFormElement;
+    const previewContainer = document.getElementById('previewContainer') as HTMLDivElement;
+    const progressBar = document.getElementById('progressBar') as HTMLDivElement;
+    const progressBarFill = document.getElementById('progressBarFill') as HTMLDivElement;
+    const uploadStatus = document.getElementById('uploadStatus') as HTMLDivElement;
+    let showPreview = true;
+
+    pasteArea.addEventListener('click', () => {
+        fileInput.click();
+    });
+
+    pasteArea.addEventListener('paste', async (event) => {
+        event.preventDefault();
+        showPreview = false;
+
+        const items = (event.clipboardData || (event as any).originalEvent.clipboardData).items;
+
+        for (let i = 0; i < items.length; i++) {
+            if (items[i].type.indexOf('image') !== -1) {
+                const blob = items[i].getAsFile();
+                handleFile(blob, showPreview, previewContainer, progressBar, progressBarFill, uploadStatus);
+            }
+        }
+    });
+
+    pasteArea.addEventListener('drop', (event) => {
+        event.preventDefault();
+        showPreview = true;
+        const files = event.dataTransfer?.files;
+        if (files && files.length > 0) {
+            previewFile(files[0], previewContainer);
+        }
+    });
+
+    pasteArea.addEventListener('dragover', (event) => {
+        event.preventDefault();
+    });
+
+    fileInput.addEventListener('change', (event) => {
+        const files = (event.target as HTMLInputElement).files;
+        if (files && files.length > 0) {
+            showPreview = true;
+            previewFile(files[0], previewContainer);
+        }
+    });
+
+    uploadForm.addEventListener('submit', (event) => {
+        event.preventDefault();
+
+        const file = fileInput.files?.[0];
+        if (file && validateFileSize(file)) {
+            handleFile(file, showPreview, previewContainer, progressBar, progressBarFill, uploadStatus);
+        }
+    });
+</script>

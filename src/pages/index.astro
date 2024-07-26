@@ -1,0 +1,13 @@
+---
+import Layout from '../layouts/Layout.astro';
+import FileUpload from '../components/FileUpload.astro';
+
+const title = "Image Uploader";
+const description = "Upload images/videos up to 100MB";
+---
+
+<Layout title={title} description={description}>
+    <h1>Upload a File</h1>
+    <p>File size limit: 100MB</p>
+    <FileUpload />
+</Layout>
