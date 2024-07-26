@@ -24,8 +24,6 @@ export const POST: APIRoute = async ({ request, locals, site }) => {
     try {
         // @ts-expect-error
         const bucket = locals.runtime.env.MY_BUCKET;
-
-        // Upload file to R2
         await bucket.put(fileName, await file.arrayBuffer(), {
             httpMetadata: { contentType: file.type }
         });

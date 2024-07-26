@@ -16,7 +16,7 @@ export default defineConfig({
             rollupOptions: {
                 output: {
                     assetFileNames: (assetInfo) => {
-                        return 'assets/[name].[hash][extname]';
+                        return "assets/[name].[hash][extname]";
                     },
                 },
             },

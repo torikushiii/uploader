@@ -10,7 +10,6 @@ export const GET: APIRoute = async ({ params, locals }) => {
     }
 
     const object = await bucket.get(path);
-
     if (object === null) {
         return new Response("Not Found", { status: 404 });
     }
