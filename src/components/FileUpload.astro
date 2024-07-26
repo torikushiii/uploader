@@ -16,7 +16,7 @@ import ErrorMessage from './ErrorMessage.astro';
 </form>
 
 <script>
-    import { validateFileSize, previewFile, handleFile } from '../utils/fileHelpers';
+    import { validateFileSize, previewFile } from '../utils/fileHelpers';
 
     const pasteArea = document.getElementById('pasteArea') as HTMLDivElement;
     const fileInput = document.getElementById('fileInput') as HTMLInputElement;
@@ -26,6 +26,37 @@ import ErrorMessage from './ErrorMessage.astro';
     const progressBarFill = document.getElementById('progressBarFill') as HTMLDivElement;
     const uploadStatus = document.getElementById('uploadStatus') as HTMLDivElement;
     let showPreview = true;
+
+    interface ProgressFetchOptions extends RequestInit {
+        onUploadProgress?: (progressEvent: ProgressEvent) => void;
+    }
+
+    async function progressFetch(url: string, options: ProgressFetchOptions): Promise<Response> {
+        return new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.open(options.method || 'GET', url);
+
+            for (const key in options.headers) {
+                xhr.setRequestHeader(key, options.headers[key]);
+            }
+
+            xhr.onload = () => {
+                resolve(new Response(xhr.responseText, {
+                    status: xhr.status,
+                    statusText: xhr.statusText,
+                }));
+            };
+
+            xhr.onerror = reject;
+
+            if (xhr.upload && options.onUploadProgress) {
+                xhr.upload.onprogress = options.onUploadProgress;
+            }
+
+            // @ts-ignore
+            xhr.send(options.body);
+        })
+    }
 
     pasteArea.addEventListener('click', () => {
         fileInput.click();
@@ -40,7 +71,7 @@ import ErrorMessage from './ErrorMessage.astro';
         for (let i = 0; i < items.length; i++) {
             if (items[i].type.indexOf('image') !== -1) {
                 const blob = items[i].getAsFile();
-                handleFile(blob, showPreview, previewContainer, progressBar, progressBarFill, uploadStatus);
+                handleFile(blob);
             }
         }
     });
@@ -71,7 +102,51 @@ import ErrorMessage from './ErrorMessage.astro';
 
         const file = fileInput.files?.[0];
         if (file && validateFileSize(file)) {
-            handleFile(file, showPreview, previewContainer, progressBar, progressBarFill, uploadStatus);
+            handleFile(file);
         }
     });
+
+    async function handleFile(file: File) {
+        if (showPreview) {
+            previewFile(file, previewContainer);
+        }
+
+        const formData = new FormData();
+        formData.append('file', file, file.name);
+
+        uploadStatus.textContent = 'Uploading...';
+        progressBar.style.display = 'block';
+        progressBarFill.style.width = '0%';
+
+        try {
+            const response = await progressFetch('/api/upload', {
+                method: 'POST',
+                body: formData,
+                onUploadProgress: (progressEvent) => {
+                    if (progressEvent.lengthComputable) {
+                        const percentComplete = (progressEvent.loaded / progressEvent.total) * 100;
+                        progressBarFill.style.width = percentComplete + '%';
+                    }
+                },
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                window.location.href = data.url;
+            } else {
+                const errorData = await response.json();
+                displayError(errorData.error);
+            }
+        } catch (error) {
+            displayError('An error occurred during the upload.');
+        } finally {
+            uploadStatus.textContent = '';
+            progressBar.style.display = 'none';
+        }
+    }
+
+    function displayError(error: string) {
+        const errorDiv = document.getElementById('fileSizeError') as HTMLDivElement;
+        errorDiv.textContent = error;
+    }
 </script>
