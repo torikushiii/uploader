@@ -132,6 +132,12 @@ import ErrorMessage from "./ErrorMessage.astro";
 
             if (response.ok) {
                 const data = await response.json();
+
+                const storedFiles = localStorage.getItem("uploadedFiles");
+                const files = storedFiles ? JSON.parse(storedFiles) : [];
+                files.push(data.fileInfo);
+                localStorage.setItem("uploadedFiles", JSON.stringify(files));
+
                 window.location.href = data.url;
             } else {
                 const errorData = await response.json();

@@ -30,7 +30,17 @@ export const POST: APIRoute = async ({ request, locals, site }) => {
 
         const fileUrl = new URL(`/${fileName}`, site).toString();
 
-        return new Response(JSON.stringify({ url: fileUrl }), { status: 200 });
+        const fileInfo = {
+            url: fileUrl,
+            name: file.name,
+            timestamp: Date.now(),
+            type: file.type
+        };
+
+        return new Response(JSON.stringify({
+            url: fileUrl,
+            fileInfo
+        }), { status: 200 });
     } catch (error) {
         console.error(error);
         return new Response(JSON.stringify({ error: "Error uploading file" }), { status: 500 });
