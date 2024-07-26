@@ -33,7 +33,9 @@
 
 <div class="gallery">
     {#if files.length === 0}
-        <p>No files uploaded yet.</p>
+        <div class="no-files-message">
+            <p>No files uploaded yet.</p>
+        </div>
     {:else}
         {#each files as file, index}
             <div class="file-card">
@@ -65,6 +67,21 @@
         grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
         gap: 1rem;
         padding: 1rem;
+        min-height: 300px; /* Ensure minimum height for empty state */
+    }
+
+    .no-files-message {
+        grid-column: 1 / -1; /* Span all columns */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100%;
+        min-height: 300px; /* Match the minimum height of the gallery */
+    }
+
+    .no-files-message p {
+        font-size: 1.2rem;
+        color: #666;
     }
 
     .file-card {
@@ -76,7 +93,8 @@
         height: 250px;
     }
 
-    .file-card img, .file-card video {
+    .file-card img,
+    .file-card video {
         width: 100%;
         height: 150px;
         object-fit: cover;
