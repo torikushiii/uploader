@@ -27,8 +27,9 @@ import ErrorMessage from "./ErrorMessage.astro";
     const uploadStatus = document.getElementById("uploadStatus") as HTMLDivElement;
     let showPreview = true;
 
-    interface ProgressFetchOptions extends RequestInit {
+    interface ProgressFetchOptions extends Omit<RequestInit, "body"> {
         onUploadProgress?: (progressEvent: ProgressEvent) => void;
+        body?: XMLHttpRequestBodyInit | null;
     }
 
     async function progressFetch(url: string, options: ProgressFetchOptions): Promise<Response> {
@@ -53,8 +54,7 @@ import ErrorMessage from "./ErrorMessage.astro";
                 xhr.upload.onprogress = options.onUploadProgress;
             }
 
-            // @ts-ignore
-            xhr.send(options.body);
+            xhr.send(options.body || null);
         })
     }
 
