@@ -1,0 +1,12 @@
+---
+import Layout from "layouts/Layout.astro";
+import GalleryComponent from "components/Gallery.svelte";
+
+const title = "Image Gallery";
+const description = "View your uploaded images";
+---
+
+<Layout title={title} description={description}>
+    <h1>Your Uploaded Images</h1>
+    <GalleryComponent client:load />
+</Layout>
