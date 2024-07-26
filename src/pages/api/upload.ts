@@ -30,7 +30,7 @@ export const POST: APIRoute = async ({ request, locals, site }) => {
             httpMetadata: { contentType: file.type }
         });
 
-        const fileUrl = new URL(`/uploads/${fileName}`, site).toString();
+        const fileUrl = new URL(`/${fileName}`, site).toString();
 
         return new Response(JSON.stringify({ url: fileUrl }), { status: 200 });
     } catch (error) {

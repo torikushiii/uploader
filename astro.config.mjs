@@ -16,9 +16,6 @@ export default defineConfig({
             rollupOptions: {
                 output: {
                     assetFileNames: (assetInfo) => {
-                        if (assetInfo.name.startsWith('uploads/')) {
-                            return assetInfo.name;
-                        }
                         return 'assets/[name].[hash][extname]';
                     },
                 },
