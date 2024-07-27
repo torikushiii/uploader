@@ -1,8 +1,23 @@
 ---
+export const prerender = true;
+
 import Layout from "layouts/Layout.astro";
 ---
 
 <Layout title="404" description="Page not found">
-    <h1>404</h1>
-    <p>Page not found</p>
+    <main>
+        <h1>404: Not Found</h1>
+        <h3>Hey buddy! I think you got the wrong door</h3>
+        <p>Leather Club's two blocks down.</p>
+        <p>Click <a href="/">here</a> to go back to the home page.</p>
+    </main>
 </Layout>
+
+<style>
+    main {
+        text-align: center;
+    }
+    div {
+        margin: 2em 20%;
+    }
+</style>
