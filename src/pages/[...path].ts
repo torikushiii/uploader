@@ -1,6 +1,6 @@
 import type { APIRoute } from "astro";
 
-export const GET: APIRoute = async ({ params, locals }) => {
+export const all: APIRoute = async ({ params, locals, request }) => {
     const path = params.path;
     // @ts-expect-error
     const bucket = locals.runtime.env.MY_BUCKET;
@@ -10,15 +10,19 @@ export const GET: APIRoute = async ({ params, locals }) => {
     }
 
     const object = await bucket.get(path);
-    if (object === null) {
-        return new Response("Not Found", { status: 404 });
+    if (object !== null) {
+        const headers = new Headers();
+        object.writeHttpMetadata(headers);
+        headers.set("etag", object.httpEtag);
+
+        return new Response(object.body, {
+            headers,
+        });
     }
 
-    const headers = new Headers();
-    object.writeHttpMetadata(headers);
-    headers.set("etag", object.httpEtag);
-
-    return new Response(object.body, {
-        headers,
+    const notFoundResponse = await fetch(new URL("/404", request.url));
+    return new Response(notFoundResponse.body, {
+        status: 404,
+        headers: notFoundResponse.headers,
     });
 };

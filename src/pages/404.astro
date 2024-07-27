@@ -1,10 +1,15 @@
 ---
-export const prerender = true;
+export const prerender = false;
 
-import Layout from "layouts/Layout.astro";
+import Layout from "../layouts/Layout.astro";
+
+const title = "404: Not Found";
+const description = "The page you're looking for doesn't exist.";
+
+Astro.response.status = 404;
 ---
 
-<Layout title="404" description="Page not found">
+<Layout title={title} description={description}>
     <main>
         <h1>404: Not Found</h1>
         <h3>Hey buddy! I think you got the wrong door</h3>
