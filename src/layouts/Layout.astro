@@ -2,6 +2,7 @@
 import "normalize.css";
 import "styles/global.css";
 
+import NavBar from "components/NavBar.astro";
 import Footer from "components/Footer.astro";
 
 import { AUTHOR, THEME_COLOUR, ICON } from "scripts/constants";
@@ -35,6 +36,7 @@ const { title, description } = Astro.props;
         <meta name="darkreader-lock" />
     </head>
     <body>
+        <NavBar />
         <main>
             <slot />
         </main>
