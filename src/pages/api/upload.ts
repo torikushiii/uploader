@@ -1,9 +1,5 @@
 import type { APIRoute } from "astro";
-
-const generateRandomFileName = () => {
-    const characters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    return Array(5).fill(null).map(() => characters.charAt(Math.floor(Math.random() * characters.length))).join("");
-};
+import { generateRandomString } from "utils/helpers";
 
 export const POST: APIRoute = async ({ request, locals, site }) => {
     const formData = await request.formData();
@@ -18,8 +14,9 @@ export const POST: APIRoute = async ({ request, locals, site }) => {
     }
 
     const fileExtension = file.name.split(".").pop();
-    const randomFileName = generateRandomFileName();
-    const fileName = `${randomFileName}.${fileExtension}`;
+    const id = generateRandomString(5);
+    const key = generateRandomString(16);
+    const fileName = `${id}.${fileExtension}`;
 
     try {
         // @ts-expect-error
@@ -28,19 +25,24 @@ export const POST: APIRoute = async ({ request, locals, site }) => {
             httpMetadata: { contentType: file.type }
         });
 
-        const fileUrl = new URL(`/${fileName}`, site).toString();
+        const fileUrl = new URL(`/${id}.${fileExtension}`, site).toString();
+        const deleteUrl = new URL(`/delete?${key}`, site).toString();
 
         const fileInfo = {
-            url: fileUrl,
-            name: file.name,
-            timestamp: Date.now(),
-            type: file.type
+            id,
+            ext: `.${fileExtension}`,
+            name: file.name.split(".")[0],
+            type: file.type,
+            key,
+            link: fileUrl,
+            delete: deleteUrl,
+            timestamp: Date.now()
         };
 
-        return new Response(JSON.stringify({
-            url: fileUrl,
-            fileInfo
-        }), { status: 200 });
+        // Store the key in the bucket for later verification
+        await bucket.put(`${id}_key`, key);
+
+        return new Response(JSON.stringify(fileInfo), { status: 200 });
     } catch (error) {
         console.error(error);
         return new Response(JSON.stringify({ error: "Error uploading file" }), { status: 500 });

@@ -2,26 +2,52 @@
     import { onMount } from "svelte";
 
     interface FileInfo {
-        url: string;
+        id: string;
         name: string;
+        ext: string;
         timestamp: number;
         type: string;
+        key: string;
+        link: string;
     }
 
     let files: FileInfo[] = [];
 
     onMount(() => {
+        loadFiles();
+    });
+
+    function loadFiles() {
         const storedFiles = localStorage.getItem("uploadedFiles");
         if (storedFiles) {
             files = JSON.parse(storedFiles);
             files.sort((a, b) => b.timestamp - a.timestamp); // Sort by newest first
         }
-    });
+    }
 
     function removeFile(index: number) {
         files = files.filter((_, i) => i !== index);
         localStorage.setItem("uploadedFiles", JSON.stringify(files));
     }
+
+    async function deleteFile(file: FileInfo, index: number) {
+        if (confirm("Are you sure you want to delete this file? This action cannot be undone.")) {
+            try {
+                const response = await fetch(`/api/delete?key=${file.key}`, {
+                    method: "GET"
+                });
+                if (response.ok) {
+                    removeFile(index);
+                } else {
+                    const errorData = await response.json();
+                    alert(`Error deleting file: ${errorData.error}`);
+                }
+            } catch (error) {
+                alert(`Error deleting file: ${error}`);
+            }
+        }
+    }
+
 
     function truncateFilename(name: string, maxLength: number = 20): string {
         if (name.length <= maxLength) return name;
@@ -40,10 +66,10 @@
         {#each files as file, index}
             <div class="file-card">
                 {#if file.type.startsWith("image/")}
-                    <img src={file.url} alt={file.name} />
+                    <img src={file.link} alt={file.name} />
                 {:else if file.type.startsWith("video/")}
                     <!-- svelte-ignore a11y-media-has-caption -->
-                    <video src={file.url} controls>
+                    <video src={file.link} controls>
                         Your browser does not support the video tag.
                     </video>
                 {:else}
@@ -52,10 +78,15 @@
                     </div>
                 {/if}
                 <div class="file-info">
-                    <span title={file.name}>{truncateFilename(file.name)}</span>
+                    <span title={file.name + file.ext}
+                        >{truncateFilename(file.name + file.ext)}</span
+                    >
                     <span>{new Date(file.timestamp).toLocaleString()}</span>
                 </div>
-                <button on:click={() => removeFile(index)}>Remove</button>
+                <div class="file-actions">
+                    <button class="newtab" on:click={() => window.open(file.link, "_blank")}>Open in new tab</button>
+                    <button class="delete" on:click={() => deleteFile(file, index)}>Delete</button>
+                </div>
             </div>
         {/each}
     {/if}
@@ -67,16 +98,16 @@
         grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
         gap: 1rem;
         padding: 1rem;
-        min-height: 300px; /* Ensure minimum height for empty state */
+        min-height: 300px;
     }
 
     .no-files-message {
-        grid-column: 1 / -1; /* Span all columns */
+        grid-column: 1 / -1;
         display: flex;
         justify-content: center;
         align-items: center;
         height: 100%;
-        min-height: 300px; /* Match the minimum height of the gallery */
+        min-height: 300px;
     }
 
     .no-files-message p {
@@ -124,17 +155,31 @@
         white-space: nowrap;
     }
 
-    button {
+    .file-actions {
         margin-top: auto;
-        background-color: #f44336;
-        color: white;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    button {
+        width: 100%;
+        padding: 0.5rem;
         border: none;
-        padding: 0.25rem 0.5rem;
         border-radius: 4px;
         cursor: pointer;
+        color: white;
+    }
+
+    .newtab {
+        background-color: #1976d2;
+    }
+
+    .delete {
+        background-color: #d32f2f;
     }
 
     button:hover {
-        background-color: #d32f2f;
+        opacity: 0.9;
     }
 </style>
