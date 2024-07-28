@@ -26,7 +26,9 @@ import ErrorMessage from "./ErrorMessage.astro";
     const progressBar = document.getElementById("progressBar") as HTMLDivElement;
     const progressBarFill = document.getElementById("progressBarFill") as HTMLDivElement;
     const uploadStatus = document.getElementById("uploadStatus") as HTMLDivElement;
+
     let showPreview = true;
+    let selectedFile: File | null = null;
 
     interface ProgressFetchOptions extends Omit<RequestInit, "body"> {
         onUploadProgress?: (progressEvent: ProgressEvent) => void;
@@ -112,20 +114,22 @@ import ErrorMessage from "./ErrorMessage.astro";
         }
     });
 
-    uploadForm.addEventListener("submit", (event) => {
-        event.preventDefault();
-
-        const file = fileInput.files?.[0];
-        if (file && validateFileSize(file)) {
-            handleFile(file);
-        }
-    });
-
     async function handleFile(file: File) {
         if (showPreview) {
             previewFile(file, previewContainer);
         }
+        selectedFile = file;
+    }
 
+    uploadForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+
+        if (selectedFile && validateFileSize(selectedFile)) {
+            await uploadFile(selectedFile);
+        }
+    });
+
+    async function uploadFile(file: File) {
         const formData = new FormData();
         formData.append("file", file, file.name);
 
