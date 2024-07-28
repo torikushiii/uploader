@@ -1,6 +1,6 @@
 import type { APIRoute } from "astro";
 
-export const all: APIRoute = async ({ params, locals, request }) => {
+export const GET: APIRoute = async ({ params, locals, request }) => {
     const path = params.path;
     // @ts-expect-error
     const bucket = locals.runtime.env.MY_BUCKET;
@@ -9,7 +9,8 @@ export const all: APIRoute = async ({ params, locals, request }) => {
         return new Response("Server configuration error", { status: 500 });
     }
 
-    const object = await bucket.get(path);
+    const filePath = Array.isArray(path) ? path.join("/") : path;
+    const object = await bucket.get(filePath);
     if (object !== null) {
         const headers = new Headers();
         object.writeHttpMetadata(headers);
