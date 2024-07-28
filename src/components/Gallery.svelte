@@ -33,8 +33,6 @@
 
     async function deleteFile(file: FileInfo, index: number) {
         if (confirm("Are you sure you want to delete this file? This action cannot be undone.")) {
-            const button = document.querySelector(`[data-index="${index}"]`) as HTMLButtonElement;
-            button.classList.add("spin");
             try {
                 const response = await fetch(`/api/delete?key=${file.key}`, {
                     method: "GET"
@@ -47,8 +45,9 @@
                 }
             } catch (error) {
                 alert(`Error deleting file: ${error}`);
-            } finally {
-                button.classList.remove("spin");
+            }
+            finally {
+                location.reload();
             }
         }
     }
