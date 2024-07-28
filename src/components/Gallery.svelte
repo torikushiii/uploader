@@ -1,5 +1,6 @@
 <script lang="ts">
     import { onMount } from "svelte";
+    import LazyImage from "./LazyImage.svelte";
 
     interface FileInfo {
         id: string;
@@ -32,6 +33,8 @@
 
     async function deleteFile(file: FileInfo, index: number) {
         if (confirm("Are you sure you want to delete this file? This action cannot be undone.")) {
+            const button = document.querySelector(`[data-index="${index}"]`) as HTMLButtonElement;
+            button.classList.add("spin");
             try {
                 const response = await fetch(`/api/delete?key=${file.key}`, {
                     method: "GET"
@@ -44,6 +47,8 @@
                 }
             } catch (error) {
                 alert(`Error deleting file: ${error}`);
+            } finally {
+                button.classList.remove("spin");
             }
         }
     }
@@ -59,14 +64,14 @@
 
 <div class="gallery">
     {#if files.length === 0}
-        <div class="no-files-message">
+        <div class="no-files-message fade-in">
             <p>No files uploaded yet.</p>
         </div>
     {:else}
         {#each files as file, index}
-            <div class="file-card">
+            <div class="file-card slide-in" style="animation-delay: {index * 0.05}s">
                 {#if file.type.startsWith("image/")}
-                    <img src={file.link} alt={file.name} />
+                    <LazyImage src={file.link} alt={file.name} />
                 {:else if file.type.startsWith("video/")}
                     <!-- svelte-ignore a11y-media-has-caption -->
                     <video src={file.link} controls>
@@ -122,6 +127,12 @@
         display: flex;
         flex-direction: column;
         height: 250px;
+        transition: all 0.3s ease;
+    }
+
+    .file-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
 
     .file-card img,
@@ -169,6 +180,11 @@
         border-radius: 4px;
         cursor: pointer;
         color: white;
+        transition: all 0.3s ease;
+    }
+
+    .file-actions button:hover {
+        opacity: 0.8;
     }
 
     .newtab {

@@ -59,6 +59,33 @@ import ErrorMessage from "./ErrorMessage.astro";
         })
     }
 
+    function handleDragOver(event: DragEvent) {
+        event.preventDefault();
+        event.stopPropagation();
+        document.body.classList.add("dragging");
+    }
+
+    function handleDragLeave(event: DragEvent) {
+        event.preventDefault();
+        event.stopPropagation();
+        document.body.classList.remove("dragging");
+    }
+
+    function handleDrop(event: DragEvent) {
+        event.preventDefault();
+        event.stopPropagation();
+        document.body.classList.remove("dragging");
+        showPreview = true;
+        const files = event.dataTransfer?.files;
+        if (files && files.length > 0) {
+            handleFile(files[0]);
+        }
+    }
+
+    document.addEventListener("dragover", handleDragOver);
+    document.addEventListener("dragleave", handleDragLeave);
+    document.addEventListener("drop", handleDrop);
+
     pasteArea.addEventListener("click", () => {
         fileInput.click();
     });
@@ -77,29 +104,11 @@ import ErrorMessage from "./ErrorMessage.astro";
         }
     });
 
-    pasteArea.addEventListener("drop", (event) => {
-        event.preventDefault();
-        showPreview = true;
-        const files = event.dataTransfer?.files;
-        if (files && files.length > 0) {
-            previewFile(files[0], previewContainer);
-            
-            const dataTransfer = new DataTransfer();
-            dataTransfer.items.add(files[0]);
-            
-            fileInput.files = dataTransfer.files;
-        }
-    });
-
-    pasteArea.addEventListener("dragover", (event) => {
-        event.preventDefault();
-    });
-
     fileInput.addEventListener("change", (event) => {
         const files = (event.target as HTMLInputElement).files;
         if (files && files.length > 0) {
             showPreview = true;
-            previewFile(files[0], previewContainer);
+            handleFile(files[0]);
         }
     });
 
@@ -109,8 +118,6 @@ import ErrorMessage from "./ErrorMessage.astro";
         const file = fileInput.files?.[0];
         if (file && validateFileSize(file)) {
             handleFile(file);
-        } else {
-            displayError("Please select a valid file.");
         }
     });
 
@@ -123,6 +130,7 @@ import ErrorMessage from "./ErrorMessage.astro";
         formData.append("file", file, file.name);
 
         uploadStatus.textContent = "Uploading...";
+        uploadStatus.classList.add("loading");
         progressBar.style.display = "block";
         progressBarFill.style.width = "0%";
 
@@ -155,6 +163,7 @@ import ErrorMessage from "./ErrorMessage.astro";
             displayError("An error occurred during the upload.");
         } finally {
             uploadStatus.textContent = "";
+            uploadStatus.classList.remove("loading");
             progressBar.style.display = "none";
         }
     }
@@ -178,10 +187,45 @@ import ErrorMessage from "./ErrorMessage.astro";
     #pasteArea {
         width: 80%;
         margin-bottom: 0.3rem;
+        transition: all 0.3s ease;
     }
 
     .upload-button {
         width: 75%;
         margin-top: 0.3rem;
+        transition: background-color 0.3s ease;
+    }
+
+    .upload-button:hover {
+        background-color: #0056b3;
+    }
+
+    .loading::after {
+        content: "";
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 2px solid #ffffff;
+        border-radius: 50%;
+        border-top: 2px solid transparent;
+        animation: spin 1s linear infinite;
+        margin-left: 10px;
+        vertical-align: middle;
+    }
+
+    body.dragging::after {
+        content: "Drop your file here";
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        color: white;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 24px;
+        z-index: 9999;
     }
 </style>

@@ -61,3 +61,11 @@ button[type="submit"] {
 button[type="submit"]:hover {
     background-color: rgb(var(--sky));
 }
+
+body.dragging {
+    overflow: hidden;
+}
+
+body.dragging * {
+    pointer-events: none;
+}
