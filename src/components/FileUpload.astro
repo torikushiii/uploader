@@ -10,9 +10,10 @@ import ErrorMessage from "./ErrorMessage.astro";
         <div id="previewContainer"></div>
     </div>
     <ErrorMessage id="fileSizeError" />
-    <button type="submit">Upload</button>
+    <button type="submit" class="upload-button">Upload</button>
     <ProgressBar />
     <div id="uploadStatus"></div>
+    <div id="uploadResult"></div>
 </form>
 
 <script>
@@ -156,3 +157,24 @@ import ErrorMessage from "./ErrorMessage.astro";
         errorDiv.textContent = error;
     }
 </script>
+
+<style>
+    #uploadForm {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 100%;
+        max-width: 300px;
+        margin: 0 auto;
+    }
+
+    #pasteArea {
+        width: 80%;
+        margin-bottom: 0.3rem;
+    }
+
+    .upload-button {
+        width: 75%;
+        margin-top: 0.3rem;
+    }
+</style>
