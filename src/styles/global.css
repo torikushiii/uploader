@@ -1,18 +1,56 @@
-:root {
-    --bg: 19, 19, 23;
-    --fg: 185, 185, 185;
-    --blue: 74, 142, 204;
-    --sky: 0, 136, 204;
-    --bg2: 38, 38, 42;
-    --primary: 80, 80, 255;
+html {
+    overflow-y: overlay;
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+    min-height: -moz-available;
+    min-height: stretch;
+    min-height: fill-available;
+    min-height: 100dvh;
 }
 
 body {
-    margin: 0;
-    background-color: rgb(var(--bg));
-    color: rgb(var(--fg));
-    font-family: 'Courier New', monospace;
-    padding-bottom: 40px;
+    --background-color: #202021;
+    --background2: #43434b;
+    --surface: #1e1e1f;
+    --surface2: #29292b;
+    --color: #e5e5e5;
+    --color-semi-trans: rgba(229, 229, 229, 0.4);
+    --warning: #e5c890;
+    --accent: #eebebe;
+    --accent-semi-trans: rgba(238, 190, 190, 0.2);
+    --accent-rgb: 238, 190, 190;
+
+    --warning: #df8e1d;
+    --accent: #dd7878;
+    --accent-semi-trans: rgba(238, 190, 190, 0.6);
+
+    background-color: var(--background-color);
+    color: var(--color);
+
+    width: 100%;
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+    min-height: -moz-available;
+    min-height: stretch;
+    min-height: fill-available;
+    min-height: 100dvh;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+}
+
+html {
+    font-family: Inter, system-ui, sans-serif;
+}
+
+@font-face {
+    font-family: "Inter";
+    src: url("/fonts/Inter.var-subset.woff2") format("woff2");
+    font-weight: 100 900;
+    font-display: swap;
+    font-style: normal;
+    font-named-instance: "Regular";
 }
 
 a {
@@ -41,23 +79,21 @@ form {
     width: 300px;
     margin: 0 auto;
     padding: 20px;
-    border: 1px solid rgb(var(--bg2));
+    border: 2px solid var(--background2);
     border-radius: 5px;
 }
 
-input[type="file"] {
-    margin-bottom: 10px;
-}
-
-button[type="submit"] {
-    padding: 10px;
-    background-color: rgb(var(--primary));
+.upload-button {
+    background-color: #4CAF50;
     color: white;
     border: none;
-    border-radius: 5px;
+    padding: 12px 20px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin: 4px 2px;
     cursor: pointer;
-}
-
-button[type="submit"]:hover {
-    background-color: rgb(var(--sky));
+    border-radius: 4px;
+    transition: background-color 0.3s ease;
 }
