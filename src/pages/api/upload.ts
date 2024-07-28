@@ -26,7 +26,7 @@ export const POST: APIRoute = async ({ request, locals, site }) => {
         });
 
         const fileUrl = new URL(`/${id}.${fileExtension}`, site).toString();
-        const deleteUrl = new URL(`/delete?${key}`, site).toString();
+        const deleteUrl = new URL(`/delete?key=${key}`, site).toString();
 
         const fileInfo = {
             id,
