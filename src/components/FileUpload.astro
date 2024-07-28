@@ -83,6 +83,11 @@ import ErrorMessage from "./ErrorMessage.astro";
         const files = event.dataTransfer?.files;
         if (files && files.length > 0) {
             previewFile(files[0], previewContainer);
+            
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(files[0]);
+            
+            fileInput.files = dataTransfer.files;
         }
     });
 
@@ -104,6 +109,8 @@ import ErrorMessage from "./ErrorMessage.astro";
         const file = fileInput.files?.[0];
         if (file && validateFileSize(file)) {
             handleFile(file);
+        } else {
+            displayError("Please select a valid file.");
         }
     });
 
