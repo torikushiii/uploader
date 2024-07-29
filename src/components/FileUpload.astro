@@ -94,7 +94,7 @@ import ErrorMessage from "./ErrorMessage.astro";
 
     pasteArea.addEventListener("paste", async (event) => {
         event.preventDefault();
-        showPreview = false;
+        showPreview = true;
 
         const items = (event.clipboardData || (event as any).originalEvent.clipboardData).items;
 
