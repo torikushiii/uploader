@@ -15,6 +15,10 @@ export const GET: APIRoute = async ({ params, locals, request }) => {
         const headers = new Headers();
         object.writeHttpMetadata(headers);
         headers.set("etag", object.httpEtag);
+        
+        if (object.httpMetadata?.contentType?.startsWith('video/')) {
+            headers.set('Accept-Ranges', 'bytes');
+        }
 
         return new Response(object.body, {
             headers,

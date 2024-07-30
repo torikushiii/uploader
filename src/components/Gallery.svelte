@@ -10,6 +10,7 @@
         type: string;
         key: string;
         link: string;
+        embed: string;
     }
 
     let files: FileInfo[] = [];
@@ -22,7 +23,7 @@
         const storedFiles = localStorage.getItem("uploadedFiles");
         if (storedFiles) {
             files = JSON.parse(storedFiles);
-            files.sort((a, b) => b.timestamp - a.timestamp); // Sort by newest first
+            files.sort((a, b) => b.timestamp - a.timestamp);
         }
     }
 
@@ -58,6 +59,12 @@
         const extension = name.split(".").pop();
         const nameWithoutExtension = name.slice(0, name.lastIndexOf("."));
         return `${nameWithoutExtension.slice(0, maxLength - 3)}...${extension}`;
+    }
+
+    function copyEmbedLink(file: FileInfo) {
+        navigator.clipboard.writeText(file.embed)
+            .then(() => alert('Embed link copied to clipboard!'))
+            .catch(err => console.error('Error copying embed link: ', err));
     }
 </script>
 

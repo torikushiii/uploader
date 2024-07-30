@@ -1,5 +1,6 @@
 import type { APIRoute } from "astro";
 import { generateRandomString } from "utils/helpers";
+import { getVideoDimensions } from "utils/videoHelpers";
 
 export const POST: APIRoute = async ({ request, locals, site }) => {
     const formData = await request.formData();
@@ -27,6 +28,12 @@ export const POST: APIRoute = async ({ request, locals, site }) => {
 
         const fileUrl = new URL(`/${id}.${fileExtension}`, site).toString();
         const deleteUrl = new URL(`/delete?key=${key}`, site).toString();
+        const embedUrl = new URL(`/v/${id}`, site).toString();
+
+        let dimensions = { width: 0, height: 0 };
+        if (file.type.startsWith('video/')) {
+            dimensions = await getVideoDimensions(await file.arrayBuffer());
+        }
 
         const fileInfo = {
             id,
@@ -36,11 +43,13 @@ export const POST: APIRoute = async ({ request, locals, site }) => {
             key,
             link: fileUrl,
             delete: deleteUrl,
+            embed: embedUrl,
+            width: dimensions.width,
+            height: dimensions.height,
             timestamp: Date.now()
         };
 
-        // Store the key in the bucket for later verification
-        await bucket.put(`${id}_key`, key);
+        await bucket.put(`${id}_metadata`, JSON.stringify(fileInfo));
 
         return new Response(JSON.stringify(fileInfo), { status: 200 });
     } catch (error) {
