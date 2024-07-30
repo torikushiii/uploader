@@ -1,3 +1,4 @@
+import { cache } from "scripts/cache";
 import type { APIRoute } from "astro";
 import { generateRandomString } from "utils/helpers";
 import { getVideoDimensions } from "utils/videoHelpers";
@@ -51,7 +52,8 @@ export const POST: APIRoute = async ({ request, locals, site }) => {
 
         await bucket.put(`${id}_metadata`, JSON.stringify(fileInfo));
 
-        return new Response(JSON.stringify(fileInfo), { status: 200 });
+        const response = new Response(JSON.stringify(fileInfo), { status: 200 });
+        return cache(response, 0);
     } catch (error) {
         console.error(error);
         return new Response(JSON.stringify({ error: "Error uploading file" }), { status: 500 });
@@ -59,5 +61,6 @@ export const POST: APIRoute = async ({ request, locals, site }) => {
 };
 
 export const GET: APIRoute = async () => {
-    return new Response(JSON.stringify({ error: "Method not allowed" }), { status: 405 });
+    const response = new Response(JSON.stringify({ error: "Method not allowed" }), { status: 405 });
+    return cache(response, 0);
 };

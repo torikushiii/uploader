@@ -1,3 +1,4 @@
+import { cache } from "scripts/cache";
 import type { APIRoute } from "astro";
 
 export const GET: APIRoute = async ({ params, locals, request }) => {
@@ -20,14 +21,15 @@ export const GET: APIRoute = async ({ params, locals, request }) => {
             headers.set('Accept-Ranges', 'bytes');
         }
 
-        return new Response(object.body, {
-            headers,
-        });
+        const response = new Response(object.body, { headers });
+        return cache(response);
     }
 
     const notFoundResponse = await fetch(new URL("/404", request.url));
-    return new Response(notFoundResponse.body, {
+    const response = new Response(notFoundResponse.body, {
         status: 404,
         headers: notFoundResponse.headers,
     });
+
+    return cache(response, 0);
 };
