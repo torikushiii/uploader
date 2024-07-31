@@ -31,7 +31,6 @@ export async function stripExifData(file: File): Promise<Blob> {
 
     const newSize = arrayBuffer.byteLength - (dataView.getUint16(exifOffset + 2) + 2);
     const newArrayBuffer = new ArrayBuffer(newSize);
-    const newDataView = new DataView(newArrayBuffer);
 
     new Uint8Array(newArrayBuffer).set(new Uint8Array(arrayBuffer.slice(0, exifOffset)));
 
