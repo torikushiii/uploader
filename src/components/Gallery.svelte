@@ -13,10 +13,13 @@
         embed: string;
     }
 
-    let files: FileInfo[] = [];
+    export let initialFiles = [];
+    let files: FileInfo[] = initialFiles;
 
     onMount(() => {
-        loadFiles();
+        if (files.length === 0) {
+            loadFiles();
+        }
     });
 
     function loadFiles() {

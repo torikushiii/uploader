@@ -1,7 +1,9 @@
+// src/pages/api/upload.ts
 import { cache } from "scripts/cache";
 import type { APIRoute } from "astro";
 import { generateRandomString } from "utils/helpers";
 import { getVideoDimensions } from "utils/videoHelpers";
+import { setCachedData } from "utils/kv-cache";
 
 export const POST: APIRoute = async ({ request, locals, site }) => {
     const formData = await request.formData();
@@ -23,6 +25,9 @@ export const POST: APIRoute = async ({ request, locals, site }) => {
     try {
         // @ts-expect-error
         const bucket = locals.runtime.env.MY_BUCKET;
+        // @ts-expect-error
+        const kv = locals.runtime.env.FILE_METADATA_CACHE;
+
         await bucket.put(fileName, await file.arrayBuffer(), {
             httpMetadata: { contentType: file.type }
         });
@@ -32,7 +37,7 @@ export const POST: APIRoute = async ({ request, locals, site }) => {
         const embedUrl = new URL(`/v/${id}`, site).toString();
 
         let dimensions = { width: 0, height: 0 };
-        if (file.type.startsWith('video/')) {
+        if (file.type.startsWith("video/")) {
             dimensions = await getVideoDimensions(await file.arrayBuffer());
         }
 
@@ -50,7 +55,14 @@ export const POST: APIRoute = async ({ request, locals, site }) => {
             timestamp: Date.now()
         };
 
-        await bucket.put(`${id}_metadata`, JSON.stringify(fileInfo));
+        await Promise.all([
+            bucket.put(`${id}_metadata`, JSON.stringify(fileInfo)),
+            setCachedData(key, id, kv)
+        ])
+
+        const galleryList = await kv.get("gallery_file_list", "json") || [];
+        galleryList.unshift(fileInfo);
+        await setCachedData("gallery_file_list", galleryList, kv);
 
         const response = new Response(JSON.stringify(fileInfo), { status: 200 });
         return cache(response, 0);

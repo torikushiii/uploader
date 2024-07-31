@@ -1,8 +1,18 @@
 ---
-export const prerender = true;
-
+import { cache } from "scripts/cache";
 import Layout from "layouts/Layout.astro";
+import { getCachedData } from "utils/kv-cache";
 import GalleryComponent from "components/Gallery.svelte";
+
+export const prerender = false;
+
+export async function GET({ request, locals }) {
+    const kv = locals.runtime.env.FILE_METADATA_CACHE;
+    const galleryList = await getCachedData('gallery_file_list', kv) || [];
+
+    const response = cache(Astro.response);
+    return response;
+}
 
 const title = "Image Gallery";
 const description = "View your uploaded images";
@@ -10,5 +20,5 @@ const description = "View your uploaded images";
 
 <Layout title={title} description={description}>
     <h1>Your Uploaded Images</h1>
-    <GalleryComponent client:load />
+    <GalleryComponent initialFiles={Astro.props.galleryList} client:load />
 </Layout>

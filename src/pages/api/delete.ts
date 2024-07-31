@@ -1,4 +1,6 @@
+import { cache } from "scripts/cache";
 import type { APIRoute } from "astro";
+import { getCachedData, setCachedData, invalidateCache } from "utils/kv-cache";
 
 export const GET: APIRoute = async ({ request, locals }) => {
     const url = new URL(request.url);
@@ -11,23 +13,26 @@ export const GET: APIRoute = async ({ request, locals }) => {
     try {
         // @ts-expect-error
         const bucket = locals.runtime.env.MY_BUCKET;
+        // @ts-expect-error
+        const kv = locals.runtime.env.FILE_METADATA_CACHE;
 
-        const files = await bucket.list();
-        const fileToDelete = files.objects.find(async (i: { key: string; }) => i.key.endsWith(`_key`) && await bucket.get(i.key) === key);
+        const fileInfo = await getCachedData(key, kv);
 
-        if (!fileToDelete) {
+        if (!fileInfo) {
             return new Response(JSON.stringify({ error: "File not found" }), { status: 404 });
         }
 
-        const fileId = fileToDelete.key.split("_key")[0];
-        const fileKey = fileId.split(".")[0];
-
         await Promise.all([
-            bucket.delete(fileId),
-            bucket.delete(`${fileKey}_key`)
+            bucket.delete(fileInfo.id),
+            invalidateCache(fileInfo.key, kv)
         ]);
 
-        return new Response(JSON.stringify({ message: "File deleted successfully" }), { status: 200 });
+        let galleryList = await getCachedData("gallery_file_list", kv) || [];
+        galleryList = galleryList.filter(file => file.key !== key);
+        await setCachedData("gallery_file_list", galleryList, kv);
+
+        const response = new Response(JSON.stringify({ message: "File deleted successfully" }), { status: 200 });
+        return cache(response, 0);
     } catch (error) {
         console.error(error);
         return new Response(JSON.stringify({ error: "Error deleting file" }), { status: 500 });
@@ -35,5 +40,6 @@ export const GET: APIRoute = async ({ request, locals }) => {
 };
 
 export const POST: APIRoute = async () => {
-    return new Response(JSON.stringify({ error: "Method not allowed" }), { status: 405 });
+    const response = new Response(JSON.stringify({ error: "Method not allowed" }), { status: 405 });
+    return cache(response, 0);
 };

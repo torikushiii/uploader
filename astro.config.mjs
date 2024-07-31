@@ -25,7 +25,10 @@ export default defineConfig({
     markdown: {
         syntaxHighlight: "prism"
     },
-    adapter: cloudflare(),
+    adapter: cloudflare({
+        mode: "directory",
+        kvNamespace: ["FILE_METADATA_CACHE"],
+    }),
     publicDir: "public",
     server: {
         host: HOST || "0.0.0.0",
