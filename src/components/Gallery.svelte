@@ -1,6 +1,7 @@
 <script lang="ts">
     import { onMount } from "svelte";
     import LazyImage from "./LazyImage.svelte";
+    import ImageModal from "./ImageModal.svelte";
 
     interface FileInfo {
         id: string;
@@ -15,6 +16,9 @@
 
     export let initialFiles = [];
     let files: FileInfo[] = initialFiles;
+
+    let selectedImage: FileInfo | null = null;
+    let isModalOpen = false;
 
     onMount(() => {
         if (files.length === 0) {
@@ -64,6 +68,18 @@
         return `${nameWithoutExtension.slice(0, maxLength - 3)}...${extension}`;
     }
 
+    function openModal(file: FileInfo) {
+        if (file.type.startsWith("image/")) {
+            selectedImage = file;
+            isModalOpen = true;
+        }
+    }
+
+    function closeModal() {
+        isModalOpen = false;
+        selectedImage = null;
+    }
+
     function copyEmbedLink(file: FileInfo) {
         navigator.clipboard.writeText(file.embed)
             .then(() => alert('Embed link copied to clipboard!'))
@@ -80,7 +96,11 @@
         {#each files as file, index}
             <div class="file-card slide-in" style="animation-delay: {index * 0.05}s">
                 {#if file.type.startsWith("image/")}
-                    <LazyImage src={file.link} alt={file.name} />
+                <!-- svelte-ignore a11y-click-events-have-key-events -->
+                <!-- svelte-ignore a11y-no-static-element-interactions -->
+                    <div class="image-container" on:click={() => openModal(file)}>
+                        <LazyImage src={file.link} alt={file.name} />
+                    </div>
                 {:else if file.type.startsWith("video/")}
                     <!-- svelte-ignore a11y-media-has-caption -->
                     <video src={file.link} controls>
@@ -105,6 +125,15 @@
         {/each}
     {/if}
 </div>
+
+{#if selectedImage}
+    <ImageModal
+        src={selectedImage.link}
+        alt={selectedImage.name}
+        isOpen={isModalOpen}
+        onClose={closeModal}
+    />
+{/if}
 
 <style>
     .gallery {
@@ -206,5 +235,14 @@
 
     button:hover {
         opacity: 0.9;
+    }
+
+    .image-container {
+        cursor: pointer;
+        transition: transform 0.2s ease-in-out;
+    }
+
+    .image-container:hover {
+        transform: scale(1.05);
     }
 </style>
