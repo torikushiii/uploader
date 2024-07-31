@@ -1,15 +1,17 @@
 ---
 import ProgressBar from "./ProgressBar.astro";
 import ErrorMessage from "./ErrorMessage.astro";
+
+import { ALLOWED_FILE_TYPES, MAX_FILE_SIZE } from "utils/constants";
 ---
 
 <form id="uploadForm" enctype="multipart/form-data">
-    <input type="file" name="file" id="fileInput" style="display: none;">
+    <input type="file" name="file" id="fileInput" style="display: none;" accept={ALLOWED_FILE_TYPES.join(",")}>
     <div id="pasteArea" style="border: 2px dashed #ccc; padding: 20px; text-align: center; cursor: pointer;">
         <p>Drag and drop files here, or paste an image</p>
         <div id="previewContainer"></div>
     </div>
-    <ErrorMessage id="fileSizeError" />
+    <ErrorMessage id="fileError" />
     <button type="submit" class="upload-button">Upload</button>
     <ProgressBar />
     <div id="uploadStatus"></div>
@@ -17,7 +19,8 @@ import ErrorMessage from "./ErrorMessage.astro";
 </form>
 
 <script>
-    import { validateFileSize, previewFile } from "../utils/fileHelpers";
+    import { validateFile, previewFile } from "utils/fileHelpers";
+    import { ALLOWED_FILE_TYPES, MAX_FILE_SIZE } from "utils/constants";
 
     const pasteArea = document.getElementById("pasteArea") as HTMLDivElement;
     const fileInput = document.getElementById("fileInput") as HTMLInputElement;
@@ -26,8 +29,8 @@ import ErrorMessage from "./ErrorMessage.astro";
     const progressBar = document.getElementById("progressBar") as HTMLDivElement;
     const progressBarFill = document.getElementById("progressBarFill") as HTMLDivElement;
     const uploadStatus = document.getElementById("uploadStatus") as HTMLDivElement;
+    const fileError = document.getElementById("fileError") as HTMLDivElement;
 
-    let showPreview = true;
     let selectedFile: File | null = null;
 
     interface ProgressFetchOptions extends Omit<RequestInit, "body"> {
@@ -61,119 +64,114 @@ import ErrorMessage from "./ErrorMessage.astro";
         })
     }
 
-    function handleDragOver(event: DragEvent) {
-        event.preventDefault();
-        event.stopPropagation();
-        document.body.classList.add("dragging");
-    }
-
-    function handleDragLeave(event: DragEvent) {
-        event.preventDefault();
-        event.stopPropagation();
-        document.body.classList.remove("dragging");
-    }
-
-    function handleDrop(event: DragEvent) {
-        event.preventDefault();
-        event.stopPropagation();
-        document.body.classList.remove("dragging");
-        showPreview = true;
-        const files = event.dataTransfer?.files;
-        if (files && files.length > 0) {
-            handleFile(files[0]);
+    function handleFile(file: File) {
+        const validationResult = validateFile(file, ALLOWED_FILE_TYPES, MAX_FILE_SIZE);
+        if (validationResult.valid) {
+            fileError.textContent = "";
+            selectedFile = file;
+            previewFile(file, previewContainer);
+        } else {
+            fileError.textContent = validationResult.error || "Unknown error";
+            selectedFile = null;
+            previewContainer.innerHTML = "";
         }
     }
-
-    document.addEventListener("dragover", handleDragOver);
-    document.addEventListener("dragleave", handleDragLeave);
-    document.addEventListener("drop", handleDrop);
 
     pasteArea.addEventListener("click", () => {
         fileInput.click();
     });
 
-    pasteArea.addEventListener("paste", async (event) => {
+    pasteArea.addEventListener("paste", (event: ClipboardEvent) => {
         event.preventDefault();
-        showPreview = true;
-
-        const items = (event.clipboardData || (event as any).originalEvent.clipboardData).items;
-
-        for (let i = 0; i < items.length; i++) {
-            if (items[i].type.indexOf("image") !== -1) {
-                const blob = items[i].getAsFile();
-                handleFile(blob);
-            }
-        }
-    });
-
-    fileInput.addEventListener("change", (event) => {
-        const files = (event.target as HTMLInputElement).files;
-        if (files && files.length > 0) {
-            showPreview = true;
-            handleFile(files[0]);
-        }
-    });
-
-    async function handleFile(file: File) {
-        if (showPreview) {
-            previewFile(file, previewContainer);
-        }
-        selectedFile = file;
-    }
-
-    uploadForm.addEventListener("submit", async (event) => {
-        event.preventDefault();
-
-        if (selectedFile && validateFileSize(selectedFile)) {
-            await uploadFile(selectedFile);
-        }
-    });
-
-    async function uploadFile(file: File) {
-        const formData = new FormData();
-        formData.append("file", file, file.name);
-
-        uploadStatus.textContent = "Uploading...";
-        progressBar.style.display = "block";
-        progressBarFill.style.width = "0%";
-
-        try {
-            const response = await progressFetch("/api/upload", {
-                method: "POST",
-                body: formData,
-                onUploadProgress: (progressEvent) => {
-                    if (progressEvent.lengthComputable) {
-                        const percentComplete = (progressEvent.loaded / progressEvent.total) * 100;
-                        progressBarFill.style.width = percentComplete + "%";
+        const items = event.clipboardData?.items;
+        if (items) {
+            for (let i = 0; i < items.length; i++) {
+                if (items[i].type.indexOf("image") !== -1 || items[i].type.indexOf("video") !== -1) {
+                    const file = items[i].getAsFile();
+                    if (file) {
+                        handleFile(file);
+                        break;
                     }
-                },
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-
-                const storedFiles = localStorage.getItem("uploadedFiles");
-                const files = storedFiles ? JSON.parse(storedFiles) : [];
-                files.push(data);
-                localStorage.setItem("uploadedFiles", JSON.stringify(files));
-
-                window.location.href = data.link;
-            } else {
-                const errorData = await response.json();
-                displayError(errorData.error);
+                }
             }
-        } catch (error) {
-            displayError("An error occurred during the upload.");
-        } finally {
-            uploadStatus.textContent = "";
-            progressBar.style.display = "none";
         }
-    }
+    });
 
-    function displayError(error: string) {
-        const errorDiv = document.getElementById("fileSizeError") as HTMLDivElement;
-        errorDiv.textContent = error;
-    }
+    fileInput.addEventListener("change", (event: Event) => {
+        const target = event.target as HTMLInputElement;
+        const file = target.files?.[0];
+        if (file) {
+            handleFile(file);
+        }
+    });
+
+    pasteArea.addEventListener("dragover", (event: DragEvent) => {
+        event.preventDefault();
+        event.stopPropagation();
+        pasteArea.style.borderColor = "#000";
+    });
+
+    pasteArea.addEventListener("dragleave", (event: DragEvent) => {
+        event.preventDefault();
+        event.stopPropagation();
+        pasteArea.style.borderColor = "#ccc";
+    });
+
+    pasteArea.addEventListener("drop", (event: DragEvent) => {
+        event.preventDefault();
+        event.stopPropagation();
+        pasteArea.style.borderColor = "#ccc";
+        const file = event.dataTransfer?.files[0];
+        if (file) {
+            handleFile(file);
+        }
+    });
+
+    uploadForm.addEventListener("submit", async (event: Event) => {
+        event.preventDefault();
+        if (selectedFile) {
+            uploadStatus.textContent = "Uploading...";
+            progressBar.style.display = "block";
+            progressBarFill.style.width = "0%";
+
+            const formData = new FormData();
+            formData.append("file", selectedFile);
+
+            try {
+                const response = await progressFetch("/api/upload", {
+                    method: "POST",
+                    body: formData,
+                    onUploadProgress: (progressEvent) => {
+                        if (progressEvent.lengthComputable) {
+                            const percentComplete = (progressEvent.loaded / progressEvent.total) * 100;
+                            progressBarFill.style.width = percentComplete + "%";
+                        }
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+
+                    const storedFiles = localStorage.getItem("uploadedFiles");
+                    const files = storedFiles ? JSON.parse(storedFiles) : [];
+                    files.push(data);
+                    localStorage.setItem("uploadedFiles", JSON.stringify(files));
+
+                    window.location.href = data.link;
+                } else {
+                    const errorData = await response.json();
+                    fileError.textContent = errorData.error || "An error occurred during upload.";
+                }
+            } catch (error) {
+                fileError.textContent = "An error occurred during upload.";
+            } finally {
+                uploadStatus.textContent = "";
+                progressBar.style.display = "none";
+            }
+        } else {
+            fileError.textContent = "Please select a valid file to upload.";
+        }
+    });
 </script>
 
 <style>
