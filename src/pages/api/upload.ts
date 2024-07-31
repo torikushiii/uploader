@@ -1,13 +1,13 @@
-// src/pages/api/upload.ts
 import { cache } from "scripts/cache";
 import type { APIRoute } from "astro";
 import { generateRandomString } from "utils/helpers";
 import { getVideoDimensions } from "utils/videoHelpers";
 import { setCachedData } from "utils/kv-cache";
+import { stripExifData } from "utils/exif-stripper";
 
 export const POST: APIRoute = async ({ request, locals, site }) => {
     const formData = await request.formData();
-    const file = formData.get("file") as File;
+    let file = formData.get("file") as File;
 
     if (!file) {
         return new Response(JSON.stringify({ error: "Please select a file to upload" }), { status: 400 });
@@ -15,6 +15,17 @@ export const POST: APIRoute = async ({ request, locals, site }) => {
 
     if (file.size > 100 * 1024 * 1024) {
         return new Response(JSON.stringify({ error: "File size exceeds 100 MB" }), { status: 400 });
+    }
+
+    if (file.type.startsWith("image/")) {
+        try {
+            const strippedFile = await stripExifData(file);
+            file = new File([strippedFile], file.name, { type: file.type });
+        }
+        catch (e) {
+            // If exif stripping fails, log the error and continue with the original file
+            console.error(e);
+        }
     }
 
     const fileExtension = file.name.split(".").pop();
