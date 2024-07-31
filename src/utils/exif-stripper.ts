@@ -1,5 +1,5 @@
 export async function stripExifData(file: File): Promise<Blob> {
-    if (!file.type.startsWith('image/jpeg')) {
+    if (!file.type.startsWith("image/jpeg")) {
         return file;
     }
 
@@ -8,7 +8,7 @@ export async function stripExifData(file: File): Promise<Blob> {
 
     // Check for JPEG SOI marker
     if (dataView.getUint16(0) !== 0xFFD8) {
-        throw new Error('Not a valid JPEG');
+        throw new Error("Not a valid JPEG");
     }
 
     let offset = 2;
@@ -38,5 +38,5 @@ export async function stripExifData(file: File): Promise<Blob> {
     const afterExif = arrayBuffer.slice(exifOffset + dataView.getUint16(exifOffset + 2) + 2);
     new Uint8Array(newArrayBuffer).set(new Uint8Array(afterExif), exifOffset);
 
-    return new Blob([newArrayBuffer], { type: 'image/jpeg' });
+    return new Blob([newArrayBuffer], { type: "image/jpeg" });
 }
