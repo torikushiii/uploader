@@ -1,4 +1,4 @@
-import { LRUCache } from 'lru-cache';
+import { LRUCache } from "lru-cache";
 
 const memoryCache = new LRUCache<string, any>({
     max: 500,

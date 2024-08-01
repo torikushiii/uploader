@@ -5,7 +5,7 @@
     export let onClose: () => void;
 
     function handleKeydown(event: KeyboardEvent) {
-        if (event.key === 'Escape') {
+        if (event.key === "Escape") {
             onClose();
         }
     }

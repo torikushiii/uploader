@@ -10,7 +10,7 @@ const description = "View your uploaded images";
 
 export async function getServerSideProps({ locals }) {
     const kv = locals.runtime.env.FILE_METADATA_CACHE;
-    const galleryList = await getCachedData('gallery_file_list', kv) || [];
+    const galleryList = await getCachedData("gallery_file_list", kv) || [];
 
     return {
         props: {
