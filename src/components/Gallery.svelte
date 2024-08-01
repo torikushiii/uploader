@@ -1,7 +1,7 @@
 <script lang="ts">
     import { onMount } from "svelte";
     import LazyImage from "./LazyImage.svelte";
-    import ImageModal from "./ImageModal.svelte";
+    import { loadComponent } from "utils/component-loader";
 
     interface FileInfo {
         id: string;
@@ -19,6 +19,7 @@
 
     let selectedImage: FileInfo | null = null;
     let isModalOpen = false;
+    let ImageModal: any;
 
     onMount(() => {
         if (files.length === 0) {
@@ -68,8 +69,11 @@
         return `${nameWithoutExtension.slice(0, maxLength - 3)}...${extension}`;
     }
 
-    function openModal(file: FileInfo) {
+    async function openModal(file: FileInfo) {
         if (file.type.startsWith("image/")) {
+            if (!ImageModal) {
+                ImageModal = await loadComponent(() => import("./ImageModal.svelte"));
+            }
             selectedImage = file;
             isModalOpen = true;
         }
@@ -159,8 +163,9 @@
     {/if}
 </div>
 
-{#if selectedImage}
-    <ImageModal
+{#if selectedImage && ImageModal}
+    <svelte:component 
+        this={ImageModal}
         src={selectedImage.link}
         alt={selectedImage.name}
         isOpen={isModalOpen}
