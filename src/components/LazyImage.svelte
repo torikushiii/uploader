@@ -13,6 +13,8 @@
                 thisImage.src = src;
                 observer.unobserve(thisImage);
             }
+        }, {
+            rootMargin: "50px"
         });
 
         observer.observe(thisImage);
