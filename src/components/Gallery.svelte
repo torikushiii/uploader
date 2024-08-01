@@ -80,10 +80,19 @@
         selectedImage = null;
     }
 
-    function copyEmbedLink(file: FileInfo) {
-        navigator.clipboard.writeText(file.embed)
-            .then(() => alert('Embed link copied to clipboard!'))
-            .catch(err => console.error('Error copying embed link: ', err));
+    function copyLink(link: string) {
+        navigator.clipboard.writeText(link)
+            .then(() => alert("Link copied to clipboard!"))
+            .catch(err => console.error("Error copying link: ", err));
+    }
+
+    function downloadFile(link: string, fileName: string) {
+        const a = document.createElement("a");
+        a.href = link;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
     }
 </script>
 
@@ -118,8 +127,32 @@
                     <span>{new Date(file.timestamp).toLocaleString()}</span>
                 </div>
                 <div class="file-actions">
-                    <button class="newtab" on:click={() => window.open(file.link, "_blank")}>Open in new tab</button>
-                    <button class="delete" on:click={() => deleteFile(file, index)}>Delete</button>
+                    <div class="file-actions">
+                        <button class="icon-button copy" on:click={() => copyLink(file.link)} title="Copy Link">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+                                <path d="M0 0h24v24H0z" fill="none"/>
+                                <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+                            </svg>
+                        </button>
+                        <button class="icon-button download" on:click={() => downloadFile(file.link, file.name + file.ext)} title="Download">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+                                <path d="M0 0h24v24H0z" fill="none"/>
+                                <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
+                            </svg>
+                        </button>
+                        <button class="icon-button newtab" on:click={() => window.open(file.link, "_blank")} title="Open in new tab">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+                                <path d="M0 0h24v24H0V0z" fill="none"/>
+                                <path d="M19 19H5V5h7V3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/>
+                            </svg>
+                        </button>
+                        <button class="icon-button delete" on:click={() => deleteFile(file, index)} title="Delete">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+                                <path d="M0 0h24v24H0V0z" fill="none"/>
+                                <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM8 9h8v10H8V9zm7.5-5l-1-1h-5l-1 1H5v2h14V4h-3.5z"/>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
             </div>
         {/each}
@@ -166,6 +199,8 @@
         flex-direction: column;
         height: 250px;
         transition: all 0.3s ease;
+        padding-bottom: 50px;
+        position: relative;
     }
 
     .file-card:hover {
@@ -173,7 +208,6 @@
         box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
 
-    .file-card img,
     .file-card video {
         width: 100%;
         height: 150px;
@@ -205,36 +239,45 @@
     }
 
     .file-actions {
-        margin-top: auto;
+        position: absolute;
+        bottom: 10px;
+        right: 10px;
         display: flex;
-        flex-direction: column;
-        gap: 0.5rem;
+        gap: 5px;
     }
 
-    button {
-        width: 100%;
-        padding: 0.5rem;
+    .icon-button {
+        width: 30px;
+        height: 30px;
+        padding: 0;
         border: none;
-        border-radius: 4px;
+        border-radius: 4px;  /* Changed from 50% to 4px for square buttons */
         cursor: pointer;
         color: white;
+        display: flex;
+        justify-content: center;
+        align-items: center;
         transition: all 0.3s ease;
     }
 
-    .file-actions button:hover {
-        opacity: 0.8;
+    .icon-button:hover {
+        transform: scale(1.1);
+    }
+
+    .copy {
+        background-color: #4CAF50;  /* Green */
+    }
+
+    .download {
+        background-color: #FFC107;  /* Amber */
     }
 
     .newtab {
-        background-color: #1976d2;
+        background-color: #1976d2;  /* Blue */
     }
 
     .delete {
-        background-color: #d32f2f;
-    }
-
-    button:hover {
-        opacity: 0.9;
+        background-color: #d32f2f;  /* Red */
     }
 
     .image-container {
