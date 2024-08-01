@@ -1,24 +1,28 @@
 ---
-import { cache } from "scripts/cache";
 import Layout from "layouts/Layout.astro";
 import { getCachedData } from "utils/kv-cache";
 import GalleryComponent from "components/Gallery.svelte";
 
 export const prerender = false;
 
-export async function GET({ request, locals }) {
+const title = "Image Gallery";
+const description = "View your uploaded images";
+
+export async function getServerSideProps({ locals }) {
     const kv = locals.runtime.env.FILE_METADATA_CACHE;
     const galleryList = await getCachedData('gallery_file_list', kv) || [];
 
-    const response = cache(Astro.response);
-    return response;
+    return {
+        props: {
+            galleryList
+        }
+    };
 }
 
-const title = "Image Gallery";
-const description = "View your uploaded images";
+const { galleryList } = Astro.props;
 ---
 
 <Layout title={title} description={description}>
     <h1>Your Uploaded Images</h1>
-    <GalleryComponent initialFiles={Astro.props.galleryList} client:load />
+    <GalleryComponent initialFiles={galleryList} client:load />
 </Layout>
