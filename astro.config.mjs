@@ -12,15 +12,8 @@ export default defineConfig({
     output: "server",
     vite: {
         build: {
-            sourcemap: true,
-            rollupOptions: {
-                output: {
-                    assetFileNames: (assetInfo) => {
-                        return "assets/[name].[hash][extname]";
-                    },
-                },
-            },
-        },
+            sourcemap: true
+        }
     },
     markdown: {
         syntaxHighlight: "prism"
