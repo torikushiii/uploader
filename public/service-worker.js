@@ -31,6 +31,10 @@ self.addEventListener("activate", event => {
 });
 
 self.addEventListener("fetch", event => {
+    if (event.request.method === "POST" && event.request.url.includes("/api/upload")) {
+        return;
+    }
+
     if (event.request.mode === "navigate" || (event.request.method === "GET" && event.request.headers.get("accept").includes("text/html"))) {
         event.respondWith(
             fetch(event.request).catch(() => {
