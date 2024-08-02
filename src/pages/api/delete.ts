@@ -2,12 +2,23 @@ import { cache } from "scripts/cache";
 import type { APIRoute } from "astro";
 import { getCachedData, setCachedData, invalidateCache } from "utils/kv-cache";
 
+const GALLERY_FILE_LIST_KEY = "gallery_file_list";
+const INVALID_DELETE_REQUEST = "Invalid delete request";
+const FILE_NOT_FOUND = "File not found";
+const METHOD_NOT_ALLOWED = "Method not allowed";
+const ERROR_DELETING_FILE = "Error deleting file";
+
+const createErrorResponse = (message: string, status: number) => {
+    return new Response(JSON.stringify({ error: message }), { status });
+};
+
 export const GET: APIRoute = async ({ request, locals }) => {
     const url = new URL(request.url);
+    const id = url.searchParams.get("id");
     const key = url.searchParams.get("key");
 
     if (!key) {
-        return new Response(JSON.stringify({ error: "Invalid delete request" }), { status: 400 });
+        return createErrorResponse(INVALID_DELETE_REQUEST, 400);
     }
 
     try {
@@ -16,30 +27,34 @@ export const GET: APIRoute = async ({ request, locals }) => {
         // @ts-expect-error
         const kv = locals.runtime.env.FILE_METADATA_CACHE;
 
-        const fileInfo = await getCachedData(key, kv);
-
+        let fileInfo = await getCachedData(key, kv);
         if (!fileInfo) {
-            return new Response(JSON.stringify({ error: "File not found" }), { status: 404 });
+            const object = await bucket.get(id);
+            if (!object) {
+                return createErrorResponse(FILE_NOT_FOUND, 404);
+            }
         }
 
+        const keyId = id?.split(".")[0];
         await Promise.all([
-            bucket.delete(fileInfo.id),
-            invalidateCache(fileInfo.key, kv)
+            bucket.delete(id),
+            bucket.delete(`${keyId}_metadata`),
+            invalidateCache(key, kv)
         ]);
 
-        let galleryList = await getCachedData("gallery_file_list", kv) || [];
-        galleryList = galleryList.filter(file => file.key !== key);
-        await setCachedData("gallery_file_list", galleryList, kv);
+        let galleryList = await getCachedData(GALLERY_FILE_LIST_KEY, kv) || [];
+        galleryList = galleryList.filter(file => file.key !== key && file.id !== id);
+        await setCachedData(GALLERY_FILE_LIST_KEY, galleryList, kv);
 
         const response = new Response(JSON.stringify({ message: "File deleted successfully" }), { status: 200 });
         return cache(response, 0);
     } catch (error) {
         console.error(error);
-        return new Response(JSON.stringify({ error: "Error deleting file" }), { status: 500 });
+        return createErrorResponse(ERROR_DELETING_FILE, 500);
     }
 };
 
 export const POST: APIRoute = async () => {
-    const response = new Response(JSON.stringify({ error: "Method not allowed" }), { status: 405 });
+    const response = createErrorResponse(METHOD_NOT_ALLOWED, 405);
     return cache(response, 0);
 };
