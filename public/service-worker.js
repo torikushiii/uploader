@@ -4,7 +4,7 @@ const OFFLINE_URL = "/offline";
 const PRECACHE_RESOURCES = [
     "/",
     OFFLINE_URL,
-    "/favicon.ico"
+    "/ChenComfy.png"
 ];
 
 self.addEventListener("install", event => {
