@@ -1,0 +1,18 @@
+{
+  "Version": "13.1.0",
+  "Name": "Custom Image Uploader",
+  "DestinationType": "ImageUploader, FileUploader",
+  "RequestMethod": "POST",
+  "RequestURL": "https://your-domain.com/api/upload", // Change this to your domain
+  "Body": "MultipartFormData",
+  "FileFormName": "file",
+  "URL": "{json:link}",
+  "DeletionURL": "{json:delete}",
+  "ErrorMessage": "{json:error}",
+  "Headers": {
+    "User-Agent": "ShareX/13.1.0"
+  },
+  "RegexList": [],
+  "URL": "$json:link$",
+  "DeletionURL": "$json:delete$"
+}

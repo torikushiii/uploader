@@ -3,15 +3,32 @@ import Link from "./Link.svelte";
 
 const navItems = [
     { href: "/", text: "Home" },
-    { href: "/gallery", text: "Gallery" }
+    { href: "/gallery", text: "Gallery" },
+    { 
+        text: "Tools", 
+        dropdown: [
+            { href: "/uploaders", text: "Uploaders" }
+        ]
+    }
 ];
 ---
 
 <nav>
     <ul>
         {navItems.map((item) => (
-            <li>
-                <Link href={item.href}>{item.text}</Link>
+            <li class={item.dropdown ? "dropdown" : ""}>
+                {item.href ? (
+                    <Link href={item.href}>{item.text}</Link>
+                ) : (
+                    <span>{item.text}</span>
+                )}
+                {item.dropdown && (
+                    <ul class="dropdown-content">
+                        {item.dropdown.map((subItem) => (
+                            <li><Link href={subItem.href}>{subItem.text}</Link></li>
+                        ))}
+                    </ul>
+                )}
             </li>
         ))}
     </ul>
@@ -40,5 +57,49 @@ const navItems = [
 
     li:hover {
         transform: translateY(-2px);
+    }
+
+    .dropdown {
+        position: relative;
+    }
+
+    .dropdown > span {
+        cursor: pointer;
+        padding: 0.5rem 0;
+    }
+
+    .dropdown-content {
+        display: none;
+        position: absolute;
+        background-color: rgb(var(--bg2));
+        min-width: 120px;
+        box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+        z-index: 1;
+        border-radius: 4px;
+        overflow: hidden;
+        top: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+    }
+
+    .dropdown:hover .dropdown-content {
+        display: block;
+    }
+
+    .dropdown-content li {
+        padding: 0;
+        white-space: nowrap;
+    }
+
+    .dropdown-content a {
+        color: rgb(var(--fg));
+        padding: 0.5rem 1rem;
+        text-decoration: none;
+        display: block;
+        transition: background-color 0.3s ease;
+    }
+
+    .dropdown-content a:hover {
+        background-color: rgba(var(--primary), 0.1);
     }
 </style>

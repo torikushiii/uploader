@@ -1,0 +1,126 @@
+---
+import Layout from "../layouts/Layout.astro";
+
+const title = "Uploaders";
+const description = "Various uploader configurations and API usage";
+
+const domain = Astro.url.origin;
+---
+
+<Layout title={title} description={description}>
+    <div class="container">
+        <h1>Uploaders</h1>
+
+        <section>
+            <h2>ShareX</h2>
+            <p>Download the ShareX configuration file: <a href="/config.sxcu" download>config.sxcu</a></p>
+        </section>
+
+        <section>
+            <h2>Chatterino</h2>
+            <ul>
+                <li><strong>Request URL:</strong> <code>{domain}/api/upload</code></li>
+                <li><strong>Form Field:</strong> <code>file</code></li>
+                <li><strong>Image Link:</strong> <code>{"{link}"}</code></li>
+                <li><strong>Deletion Link:</strong> <code>{"{delete}"}</code></li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>API</h2>
+            <h3>Uploading an Image</h3>
+            <pre><code>curl -X POST -F "file=@/path/to/your/file.jpg" {domain}/api/upload</code></pre>
+            
+            <h3>Upload Response Example</h3>
+            <pre><code>{`{
+    "id": "abcd1",
+    "ext": ".jpg",
+    "name": "example",
+    "type": "image/jpeg",
+    "key": "randomkey123456",
+    "link": "${domain}/abcd1.jpg",
+    "delete": "${domain}/delete?key=randomkey123456",
+    "embed": "${domain}/v/abcd1",
+    "width": 1920,
+    "height": 1080,
+    "timestamp": 1628097600000
+}`}</code></pre>
+
+            <h3>Deleting an Image</h3>
+            <pre><code>curl -X GET "{domain}/api/delete?key=randomkey123456"</code></pre>
+
+            <h3>Delete Response Example</h3>
+            <pre><code>{`{
+    "message": "File deleted successfully"
+}`}</code></pre>
+        </section>
+    </div>
+</Layout>
+
+<style>
+    .container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 0 20px;
+    }
+
+    h1 {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+    section {
+        margin-bottom: 3rem;
+        background-color: rgba(var(--bg2), 0.5);
+        padding: 2rem;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    h2 {
+        margin-bottom: 1rem;
+        border-bottom: 2px solid rgba(var(--primary), 0.5);
+        padding-bottom: 0.5rem;
+    }
+
+    h3 {
+        margin-top: 1.5rem;
+        margin-bottom: 0.5rem;
+    }
+
+    pre {
+        background-color: rgb(var(--bg2));
+        padding: 1rem;
+        border-radius: 4px;
+        overflow-x: auto;
+        margin-bottom: 1rem;
+    }
+
+    code {
+        font-family: "Courier New", Courier, monospace;
+    }
+
+    ul {
+        list-style-type: none;
+        padding-left: 0;
+    }
+
+    li {
+        margin-bottom: 0.5rem;
+    }
+
+    strong {
+        color: rgb(var(--primary));
+    }
+
+    a {
+        color: rgb(var(--blue));
+        text-decoration: none;
+        transition: color 0.3s ease;
+    }
+
+    a:hover {
+        color: rgb(var(--sky));
+        text-decoration: underline;
+    }
+</style>
