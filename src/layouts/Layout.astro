@@ -44,7 +44,6 @@ const { title, description } = Astro.props;
 
         <Footer />
         <script>
-        
             function handleReload(): void {
                 window.location.reload();
             }
@@ -71,13 +70,6 @@ const { title, description } = Astro.props;
                         .catch((error: Error) => {
                             console.error("Service Worker registration failed: ", error);
                         });
-                });
-        
-                let refreshing = false;
-                navigator.serviceWorker.addEventListener("controllerchange", () => {
-                    if (refreshing) return;
-                    refreshing = true;
-                    window.location.reload();
                 });
             }
         </script>

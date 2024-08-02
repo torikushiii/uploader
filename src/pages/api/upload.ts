@@ -2,8 +2,11 @@ import { cache } from "scripts/cache";
 import type { APIRoute } from "astro";
 import { generateRandomString } from "utils/helpers";
 import { getVideoDimensions } from "utils/videoHelpers";
-import { setCachedData } from "utils/kv-cache";
+import { getCachedData, setCachedData } from "utils/kv-cache";
 import { stripExifData } from "utils/exif-stripper";
+
+const RATE_LIMIT = 10;
+const RATE_LIMIT_WINDOW = 60 * 1000;
 
 export const POST: APIRoute = async ({ request, locals, site }) => {
     const formData = await request.formData();
@@ -33,11 +36,28 @@ export const POST: APIRoute = async ({ request, locals, site }) => {
     const key = generateRandomString(16);
     const fileName = `${id}.${fileExtension}`;
 
+    const clientIp = request.headers.get("CF-Connecting-IP") || "unknown";
+    const rateLimitKey = `ratelimit:${clientIp}`;
+
     try {
         // @ts-expect-error
         const bucket = locals.runtime.env.MY_BUCKET;
         // @ts-expect-error
         const kv = locals.runtime.env.FILE_METADATA_CACHE;
+
+        let rateLimit = await getCachedData(rateLimitKey, kv) || { count: 0, timestamp: Date.now() };
+        if (Date.now() - rateLimit.timestamp > RATE_LIMIT_WINDOW) {
+            rateLimit = { count: 0, timestamp: Date.now() };
+        }
+
+        rateLimit.count++;
+
+        if (rateLimit.count > RATE_LIMIT) {
+            await setCachedData(rateLimitKey, rateLimit, kv);
+            return new Response(JSON.stringify({ error: "Rate limit exceeded" }), { status: 429 });
+        }
+
+        await setCachedData(rateLimitKey, rateLimit, kv);
 
         await bucket.put(fileName, await file.arrayBuffer(), {
             httpMetadata: { contentType: file.type }
