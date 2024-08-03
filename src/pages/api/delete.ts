@@ -7,6 +7,7 @@ const INVALID_DELETE_REQUEST = "Invalid delete request";
 const FILE_NOT_FOUND = "File not found";
 const METHOD_NOT_ALLOWED = "Method not allowed";
 const ERROR_DELETING_FILE = "Error deleting file";
+const INVALID_KEY = "Invalid key";
 
 const createErrorResponse = (message: string, status: number) => {
     return new Response(JSON.stringify({ error: message }), { status });
@@ -30,7 +31,13 @@ export const GET: APIRoute = async ({ request, locals }) => {
         let fileInfo = await getCachedData(key, kv);
         if (!fileInfo) {
             const object = await bucket.get(id);
-            if (!object) {
+            if (object) {
+                const keyData = object.key;
+                if (key !== keyData) {
+                    return createErrorResponse(INVALID_KEY, 400);
+                }
+            }
+            else {
                 return createErrorResponse(FILE_NOT_FOUND, 404);
             }
         }
