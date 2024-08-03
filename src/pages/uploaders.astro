@@ -39,7 +39,7 @@ const domain = Astro.url.origin;
     "type": "image/jpeg",
     "key": "randomkey123456",
     "link": "${domain}/abcd1.jpg",
-    "delete": "${domain}/delete?key=randomkey123456",
+    "delete": "${domain}/api/delete?id=abcd1.jpg&key=randomkey123456",
     "embed": "${domain}/v/abcd1",
     "width": 1920,
     "height": 1080,
@@ -47,7 +47,7 @@ const domain = Astro.url.origin;
 }`}</code></pre>
 
             <h3>Deleting an Image</h3>
-            <pre><code>curl -X GET "{domain}/api/delete?key=randomkey123456"</code></pre>
+            <pre><code>curl -X GET "{domain}/api/delete?id=abcd1.jpg&key=randomkey123456"</code></pre>
 
             <h3>Delete Response Example</h3>
             <pre><code>{`{
