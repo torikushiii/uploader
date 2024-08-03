@@ -44,6 +44,8 @@ const { title, description } = Astro.props;
 
         <Footer />
         <script>
+            const serviceWorkerVersion = 4;
+
             function handleReload(): void {
                 window.location.reload();
             }
@@ -63,7 +65,7 @@ const { title, description } = Astro.props;
                 });
         
                 window.addEventListener("load", () => {
-                    navigator.serviceWorker.register(`/service-worker.js`)
+                    navigator.serviceWorker.register(`/service-worker.js?v=${serviceWorkerVersion}`)
                         .then((registration: ServiceWorkerRegistration) => {
                             console.log("Service Worker registered with scope: ", registration.scope);
                         })
