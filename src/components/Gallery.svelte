@@ -134,28 +134,16 @@
                 <div class="file-actions">
                     <div class="file-actions">
                         <button class="icon-button copy" on:click={() => copyLink(file.link)} title="Copy Link">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
-                                <path d="M0 0h24v24H0z" fill="none"/>
-                                <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
-                            </svg>
+                            <img src="/assets/copy.svg" alt="Copy" width="18" height="18" />
                         </button>
                         <button class="icon-button download" on:click={() => downloadFile(file.link, file.name + file.ext)} title="Download">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
-                                <path d="M0 0h24v24H0z" fill="none"/>
-                                <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
-                            </svg>
+                            <img src="/assets/download.svg" alt="Download" width="18" height="18" />
                         </button>
                         <button class="icon-button newtab" on:click={() => window.open(file.link, "_blank")} title="Open in new tab">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
-                                <path d="M0 0h24v24H0V0z" fill="none"/>
-                                <path d="M19 19H5V5h7V3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/>
-                            </svg>
+                            <img src="/assets/newtab.svg" alt="Open in new tab" width="18" height="18" />
                         </button>
                         <button class="icon-button delete" on:click={() => deleteFile(file, index)} title="Delete">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
-                                <path d="M0 0h24v24H0V0z" fill="none"/>
-                                <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM8 9h8v10H8V9zm7.5-5l-1-1h-5l-1 1H5v2h14V4h-3.5z"/>
-                            </svg>
+                            <img src="/assets/delete.svg" alt="Delete" width="18" height="18" />
                         </button>
                     </div>
                 </div>
