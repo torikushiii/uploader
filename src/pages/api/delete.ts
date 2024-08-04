@@ -7,7 +7,6 @@ const INVALID_DELETE_REQUEST = "Invalid delete request";
 const FILE_NOT_FOUND = "File not found";
 const METHOD_NOT_ALLOWED = "Method not allowed";
 const ERROR_DELETING_FILE = "Error deleting file";
-const INVALID_KEY = "Invalid key";
 
 const createErrorResponse = (message: string, status: number) => {
     return new Response(JSON.stringify({ error: message }), { status });
@@ -15,7 +14,6 @@ const createErrorResponse = (message: string, status: number) => {
 
 export const GET: APIRoute = async ({ request, locals }) => {
     const url = new URL(request.url);
-    const id = url.searchParams.get("id");
     const key = url.searchParams.get("key");
 
     if (!key) {
@@ -25,33 +23,18 @@ export const GET: APIRoute = async ({ request, locals }) => {
     try {
         // @ts-expect-error
         const bucket = locals.runtime.env.MY_BUCKET;
-        // @ts-expect-error
-        const kv = locals.runtime.env.FILE_METADATA_CACHE;
 
-        let fileInfo = await getCachedData(key, kv);
+        const data = await bucket.get(`${key}_metadata`);
+        const fileInfo = data ? JSON.parse(await data.text()) : null;
         if (!fileInfo) {
-            const object = await bucket.get(id);
-            if (object) {
-                const keyData = object.key;
-                if (key !== keyData) {
-                    return createErrorResponse(INVALID_KEY, 400);
-                }
-            }
-            else {
-                return createErrorResponse(FILE_NOT_FOUND, 404);
-            }
+            return createErrorResponse(FILE_NOT_FOUND, 404);
         }
 
-        const keyId = id?.split(".")[0];
+        const id = `${fileInfo.id}${fileInfo.ext}`;
         await Promise.all([
             bucket.delete(id),
-            bucket.delete(`${keyId}_metadata`),
-            invalidateCache(key, kv)
+            bucket.delete(`${key}_metadata`),
         ]);
-
-        let galleryList = await getCachedData(GALLERY_FILE_LIST_KEY, kv) || [];
-        galleryList = galleryList.filter(file => file.key !== key && file.id !== id);
-        await setCachedData(GALLERY_FILE_LIST_KEY, galleryList, kv);
 
         const response = new Response(JSON.stringify({ message: "File deleted successfully" }), { status: 200 });
         return cache(response, 0);

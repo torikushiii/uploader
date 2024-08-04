@@ -11,6 +11,7 @@
         type: string;
         key: string;
         link: string;
+        delete: string;
         embed: string;
     }
 
@@ -43,8 +44,7 @@
     async function deleteFile(file: FileInfo, index: number) {
         if (confirm("Are you sure you want to delete this file? This action cannot be undone.")) {
             try {
-                // need to find a better way to handle this pepeW
-                const response = await fetch(`/api/delete?id=${file.id}${file.ext}&key=${file.key}`, {
+                const response = await fetch(file.delete, {
                     method: "GET"
                 });
                 if (response.ok) {

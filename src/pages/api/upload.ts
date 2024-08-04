@@ -81,7 +81,7 @@ export const POST: APIRoute = async ({ request, locals, site }) => {
         });
 
         const fileUrl = new URL(`/${id}.${fileExtension}`, site).toString();
-        const deleteUrl = new URL(`/api/delete?id=${id}.${fileExtension}&key=${key}`, site).toString();
+        const deleteUrl = new URL(`/api/delete?key=${key}`, site).toString();
         const embedUrl = new URL(`/v/${id}`, site).toString();
 
         let dimensions = { width: 0, height: 0 };
@@ -97,14 +97,14 @@ export const POST: APIRoute = async ({ request, locals, site }) => {
             key,
             link: fileUrl,
             delete: deleteUrl,
-            embed: embedUrl,
+            embed: (file.type.startsWith("video/") ? embedUrl : null),
             width: dimensions.width,
             height: dimensions.height,
             timestamp: Date.now()
         };
 
         await Promise.all([
-            bucket.put(`${id}_metadata`, JSON.stringify(fileInfo)),
+            bucket.put(`${key}_metadata`, JSON.stringify(fileInfo)),
             setCachedData(key, id, kv)
         ]);
 
