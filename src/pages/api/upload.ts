@@ -104,6 +104,7 @@ export const POST: APIRoute = async ({ request, locals, site }) => {
         };
 
         await Promise.all([
+            bucket.put(`${id}_metadata`, JSON.stringify(fileInfo)),
             bucket.put(`${key}_metadata`, JSON.stringify(fileInfo)),
             setCachedData(key, id, kv)
         ]);

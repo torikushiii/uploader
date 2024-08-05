@@ -31,6 +31,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
         const id = `${fileInfo.id}${fileInfo.ext}`;
         await Promise.all([
             bucket.delete(id),
+            bucket.delete(`${fileInfo.id}_metadata`),
             bucket.delete(`${key}_metadata`),
         ]);
 
