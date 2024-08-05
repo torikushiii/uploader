@@ -87,33 +87,31 @@ import { ALLOWED_FILE_TYPES, MAX_FILE_SIZE } from "utils/constants";
         }
     }
 
-    document.addEventListener("dragenter", (e: DragEvent) => {
+    const handleDragEvent = (e: Event) => {
         e.preventDefault();
         e.stopPropagation();
-        dropArea.classList.remove("hidden");
-    });
-
-    document.addEventListener("dragover", (e: DragEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-    });
-
-    document.addEventListener("dragleave", (e: DragEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (e.target === dropArea) {
-            dropArea.classList.add("hidden");
+    
+        switch (e.type) {
+            case "dragenter":
+                dropArea.classList.remove("hidden");
+                break;
+            case "dragleave":
+                if (e.target === dropArea) {
+                    dropArea.classList.add("hidden");
+                }
+                break;
+            case "drop":
+                dropArea.classList.add("hidden");
+                const file = (e as DragEvent).dataTransfer?.files[0];
+                if (file) {
+                    handleFile(file);
+                }
+                break;
         }
-    });
-
-    document.addEventListener("drop", (e: DragEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-        dropArea.classList.add("hidden");
-        const file = e.dataTransfer?.files[0];
-        if (file) {
-            handleFile(file);
-        }
+    };
+    
+    ["dragenter", "dragover", "dragleave", "drop"].forEach(eventType => {
+        document.addEventListener(eventType, handleDragEvent as EventListener);
     });
 
     document.addEventListener("paste", (e: ClipboardEvent) => {
@@ -139,28 +137,6 @@ import { ALLOWED_FILE_TYPES, MAX_FILE_SIZE } from "utils/constants";
     fileInput.addEventListener("change", (e: Event) => {
         const target = e.target as HTMLInputElement;
         const file = target.files?.[0];
-        if (file) {
-            handleFile(file);
-        }
-    });
-
-    pasteArea.addEventListener("dragover", (event: DragEvent) => {
-        event.preventDefault();
-        event.stopPropagation();
-        pasteArea.style.borderColor = "#000";
-    });
-
-    pasteArea.addEventListener("dragleave", (event: DragEvent) => {
-        event.preventDefault();
-        event.stopPropagation();
-        pasteArea.style.borderColor = "#ccc";
-    });
-
-    pasteArea.addEventListener("drop", (event: DragEvent) => {
-        event.preventDefault();
-        event.stopPropagation();
-        pasteArea.style.borderColor = "#ccc";
-        const file = event.dataTransfer?.files[0];
         if (file) {
             handleFile(file);
         }
