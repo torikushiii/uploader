@@ -1,8 +1,6 @@
 import { cache } from "scripts/cache";
 import type { APIRoute } from "astro";
-import { getCachedData, setCachedData, invalidateCache } from "utils/kv-cache";
 
-const GALLERY_FILE_LIST_KEY = "gallery_file_list";
 const INVALID_DELETE_REQUEST = "Invalid delete request";
 const FILE_NOT_FOUND = "File not found";
 const METHOD_NOT_ALLOWED = "Method not allowed";
