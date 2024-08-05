@@ -1,28 +1,38 @@
 :root {
-    --bg: 19, 19, 23;
-    --fg: 185, 185, 185;
-    --blue: 74, 142, 204;
-    --sky: 0, 136, 204;
-    --bg2: 38, 38, 42;
-    --primary: 80, 80, 255;
+    --bg: 28, 30, 33;
+    --fg: 220, 220, 220;
+    --blue: 114, 160, 239;
+    --sky: 0, 172, 239;
+    --bg2: 33, 37, 41;
+    --primary: 114, 137, 218;
+    --accent: 255, 121, 198;
+    --shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
 
 body {
     margin: 0;
     background-color: rgb(var(--bg));
     color: rgb(var(--fg));
-    font-family: 'Courier New', monospace;
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
     padding-bottom: 40px;
+    transition: background-color 0.3s ease;
 }
 
 a {
     color: rgb(var(--blue));
     text-decoration: none;
+    transition: color 0.3s ease;
 }
 
 a:hover {
     color: rgb(var(--sky));
     text-decoration: underline;
+}
+
+h1, h2, h3 {
+    font-weight: 600;
 }
 
 h1 {
@@ -31,18 +41,20 @@ h1 {
 }
 
 p {
-    text-align: center;
-    margin-bottom: 20px;
+    line-height: 1.6;
+    margin-bottom: 1rem;
 }
 
 form {
     display: flex;
     flex-direction: column;
-    width: 300px;
+    width: 100%;
+    max-width: 500px;
     margin: 0 auto;
     padding: 20px;
     border: 1px solid rgb(var(--bg2));
-    border-radius: 5px;
+    border-radius: 8px;
+    box-shadow: var(--shadow);
 }
 
 input[type="file"] {
@@ -56,6 +68,7 @@ button[type="submit"] {
     border: none;
     border-radius: 5px;
     cursor: pointer;
+    transition: background-color 0.3s ease;
 }
 
 button[type="submit"]:hover {
