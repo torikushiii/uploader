@@ -5,9 +5,18 @@ import ErrorMessage from "./ErrorMessage.astro";
 import { ALLOWED_FILE_TYPES, MAX_FILE_SIZE } from "utils/constants";
 ---
 
+<div id="dropArea" class="hidden">
+    <div class="drop-message">
+        <div class="icon">
+            <img src="/assets/drag.svg" alt="Drag and drop icon" width="80" height="80">
+        </div>
+        <p>Drop your file here</p>
+    </div>
+</div>
+
 <form id="uploadForm" enctype="multipart/form-data">
     <input type="file" name="file" id="fileInput" style="display: none;" accept={ALLOWED_FILE_TYPES.join(",")}>
-    <div id="pasteArea" style="border: 2px dashed #ccc; padding: 20px; text-align: center; cursor: pointer;">
+    <div id="pasteArea">
         <p>Drag and drop files here, or paste an image</p>
         <div id="previewContainer"></div>
     </div>
@@ -22,6 +31,7 @@ import { ALLOWED_FILE_TYPES, MAX_FILE_SIZE } from "utils/constants";
     import { validateFile, previewFile } from "utils/file-helpers";
     import { ALLOWED_FILE_TYPES, MAX_FILE_SIZE } from "utils/constants";
 
+    const dropArea = document.getElementById("dropArea") as HTMLDivElement;
     const pasteArea = document.getElementById("pasteArea") as HTMLDivElement;
     const fileInput = document.getElementById("fileInput") as HTMLInputElement;
     const uploadForm = document.getElementById("uploadForm") as HTMLFormElement;
@@ -64,7 +74,7 @@ import { ALLOWED_FILE_TYPES, MAX_FILE_SIZE } from "utils/constants";
         })
     }
 
-    function handleFile(file: File) {
+    function handleFile(file: File): void {
         const validationResult = validateFile(file, ALLOWED_FILE_TYPES, MAX_FILE_SIZE);
         if (validationResult.valid) {
             fileError.textContent = "";
@@ -77,13 +87,38 @@ import { ALLOWED_FILE_TYPES, MAX_FILE_SIZE } from "utils/constants";
         }
     }
 
-    pasteArea.addEventListener("click", () => {
-        fileInput.click();
+    document.addEventListener("dragenter", (e: DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropArea.classList.remove("hidden");
     });
 
-    pasteArea.addEventListener("paste", (event: ClipboardEvent) => {
-        event.preventDefault();
-        const items = event.clipboardData?.items;
+    document.addEventListener("dragover", (e: DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+    });
+
+    document.addEventListener("dragleave", (e: DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.target === dropArea) {
+            dropArea.classList.add("hidden");
+        }
+    });
+
+    document.addEventListener("drop", (e: DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropArea.classList.add("hidden");
+        const file = e.dataTransfer?.files[0];
+        if (file) {
+            handleFile(file);
+        }
+    });
+
+    document.addEventListener("paste", (e: ClipboardEvent) => {
+        e.preventDefault();
+        const items = e.clipboardData?.items;
         if (items) {
             for (let i = 0; i < items.length; i++) {
                 if (items[i].type.indexOf("image") !== -1 || items[i].type.indexOf("video") !== -1) {
@@ -97,8 +132,12 @@ import { ALLOWED_FILE_TYPES, MAX_FILE_SIZE } from "utils/constants";
         }
     });
 
-    fileInput.addEventListener("change", (event: Event) => {
-        const target = event.target as HTMLInputElement;
+    pasteArea.addEventListener("click", () => {
+        fileInput.click();
+    });
+
+    fileInput.addEventListener("change", (e: Event) => {
+        const target = e.target as HTMLInputElement;
         const file = target.files?.[0];
         if (file) {
             handleFile(file);
@@ -184,12 +223,6 @@ import { ALLOWED_FILE_TYPES, MAX_FILE_SIZE } from "utils/constants";
         margin: 0 auto;
     }
 
-    #pasteArea {
-        width: 80%;
-        margin-bottom: 0.3rem;
-        transition: all 0.3s ease;
-    }
-
     .upload-button {
         width: 75%;
         margin-top: 0.3rem;
@@ -200,19 +233,70 @@ import { ALLOWED_FILE_TYPES, MAX_FILE_SIZE } from "utils/constants";
         background-color: #0056b3;
     }
 
-    body.dragging::after {
-        content: "Drop your file here";
+    #dropArea {
         position: fixed;
         top: 0;
         left: 0;
         width: 100%;
         height: 100%;
         background-color: rgba(0, 0, 0, 0.5);
-        color: white;
+        backdrop-filter: blur(5px);
         display: flex;
         justify-content: center;
         align-items: center;
-        font-size: 24px;
         z-index: 9999;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    #dropArea:not(.hidden) {
+        opacity: 1;
+    }
+
+    #dropArea.hidden {
+        display: none;
+    }
+
+    .drop-message {
+        background-color: rgba(255, 255, 255, 0.2);
+        border: 2px dashed rgba(255, 255, 255, 0.5);
+        border-radius: 20px;
+        padding: 40px;
+        text-align: center;
+        color: white;
+        font-size: 24px;
+        font-weight: bold;
+        transition: all 0.3s ease;
+    }
+
+    .drop-message:hover {
+        background-color: rgba(255, 255, 255, 0.3);
+        border-color: rgba(255, 255, 255, 0.7);
+    }
+
+    .icon {
+        width: 80px;
+        height: 80px;
+        margin: 0 auto 20px;
+    }
+
+    .icon svg {
+        width: 100%;
+        height: 100%;
+        stroke: white;
+    }
+
+    #pasteArea {
+        border: 2px dashed #ccc;
+        padding: 20px;
+        text-align: center;
+        cursor: pointer;
+        margin-bottom: 1rem;
+        transition: all 0.3s ease;
+    }
+
+    #pasteArea:hover {
+        border-color: #999;
+        background-color: rgba(0, 0, 0, 0.05);
     }
 </style>
