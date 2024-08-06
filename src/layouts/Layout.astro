@@ -37,7 +37,10 @@ const { title, description } = Astro.props;
         <meta name="darkreader-lock" />
     </head>
     <body>
-        <NavBar />
+        <header>
+            <NavBar title={title} />
+        </header>
+
         <main>
             <slot />
         </main>
