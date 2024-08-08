@@ -10,12 +10,12 @@ import { ALLOWED_FILE_TYPES } from "utils/constants";
         <div class="icon">
             <img src="/assets/drag.svg" alt="Drag and drop icon" width="80" height="80">
         </div>
-        <p>Drop your file here</p>
+        <p>Drop your files here</p>
     </div>
 </div>
 
 <form id="uploadForm" enctype="multipart/form-data">
-    <input type="file" name="file" id="fileInput" style="display: none;" accept={ALLOWED_FILE_TYPES.join(",")}>
+    <input type="file" name="file" id="fileInput" style="display: none;" accept={ALLOWED_FILE_TYPES.join(",")} multiple>
     <div id="pasteArea">
         <p>Drag and drop files here, or paste an image</p>
         <div id="previewContainer"></div>
@@ -30,6 +30,7 @@ import { ALLOWED_FILE_TYPES } from "utils/constants";
 <script>
     import { validateFile, previewFile } from "utils/file-helpers";
     import { ALLOWED_FILE_TYPES, MAX_FILE_SIZE } from "utils/constants";
+    import { generateRandomString } from "utils/helpers";
 
     const dropArea = document.getElementById("dropArea") as HTMLDivElement;
     const pasteArea = document.getElementById("pasteArea") as HTMLDivElement;
@@ -71,19 +72,21 @@ import { ALLOWED_FILE_TYPES } from "utils/constants";
             }
 
             xhr.send(options.body || null);
-        })
+        });
     }
 
-    function handleFile(file: File): void {
-        const validationResult = validateFile(file, ALLOWED_FILE_TYPES, MAX_FILE_SIZE);
-        if (validationResult.valid) {
-            fileError.textContent = "";
-            selectedFile = file;
-            previewFile(file, previewContainer);
-        } else {
-            fileError.textContent = validationResult.error || "Unknown error";
-            selectedFile = null;
-            previewContainer.innerHTML = "";
+    function handleFile(files: FileList): void {
+        previewContainer.innerHTML = "";
+        fileError.textContent = "";
+
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            const validationResult = validateFile(file, ALLOWED_FILE_TYPES, MAX_FILE_SIZE);
+            if (validationResult.valid) {
+                previewFile(file, previewContainer);
+            } else {
+                fileError.textContent = validationResult.error || "Unknown error";
+            }
         }
     }
 
@@ -102,9 +105,9 @@ import { ALLOWED_FILE_TYPES } from "utils/constants";
                 break;
             case "drop":
                 dropArea.classList.add("hidden");
-                const file = (e as DragEvent).dataTransfer?.files[0];
-                if (file) {
-                    handleFile(file);
+                const files = (e as DragEvent).dataTransfer?.files;
+                if (files) {
+                    handleFile(files);
                 }
                 break;
         }
@@ -116,6 +119,7 @@ import { ALLOWED_FILE_TYPES } from "utils/constants";
 
     document.addEventListener("paste", async (e: ClipboardEvent) => {
         e.preventDefault();
+
         const items = e.clipboardData?.items;
         if (items) {
             for (let i = 0; i < items.length; i++) {
@@ -124,7 +128,12 @@ import { ALLOWED_FILE_TYPES } from "utils/constants";
                     if (file) {
                         const validationResult = validateFile(file, ALLOWED_FILE_TYPES, MAX_FILE_SIZE);
                         if (validationResult.valid) {
-                            await uploadFile(file);
+                            const dataTransfer = new DataTransfer();
+                            dataTransfer.items.add(file);
+                            const files = dataTransfer.files;
+                            if (files) {
+                                await uploadFile(files);
+                            }
                         } else {
                             fileError.textContent = validationResult.error || "Unknown error";
                         }
@@ -141,59 +150,132 @@ import { ALLOWED_FILE_TYPES } from "utils/constants";
 
     fileInput.addEventListener("change", (e: Event) => {
         const target = e.target as HTMLInputElement;
-        const file = target.files?.[0];
-        if (file) {
-            handleFile(file);
+        const files = target.files;
+        if (files) {
+            handleFile(files);
         }
     });
 
     uploadForm.addEventListener("submit", async (event: Event) => {
         event.preventDefault();
-        if (selectedFile) {
-            await uploadFile(selectedFile);
+        const files = fileInput.files;
+        if (files && files.length > 0) {
+            await uploadFile(files);
         } else {
             fileError.textContent = "Please select a valid file to upload.";
         }
     });
 
-    async function uploadFile(file: File) {
+    async function uploadFile(files: FileList) {
+        if (files.length > 1) {
+            let hasImage = false;
+            let hasVideo = false;
+
+            for (let i = 0; i < files.length; i++) {
+                const fileType = files[i].type;
+                if (fileType.startsWith("image/")) {
+                    hasImage = true;
+                } else if (fileType.startsWith("video/")) {
+                    hasVideo = true;
+                }
+            }
+
+            if (hasVideo && files.length > 1) {
+                fileError.textContent = "You cannot upload more than one video at a time.";
+                return;
+            }
+
+            if (hasVideo && hasImage) {
+                fileError.textContent = "You cannot upload videos with images. Please upload videos separately.";
+                return;
+            }
+
+            if (files.length > 4) {
+                fileError.textContent = "You can only upload up to 4 images in an album.";
+                return;
+            }
+        }
+
         uploadStatus.textContent = "Uploading...";
         progressBar.style.display = "block";
         progressBarFill.style.width = "0%";
 
-        const formData = new FormData();
-        formData.append("file", file);
+        if (files.length === 1) {
+            const file = files[0];
+            const formData = new FormData();
+            formData.append("file", file);
 
-        try {
-            const response = await progressFetch("/api/upload", {
-                method: "POST",
-                body: formData,
-                onUploadProgress: (progressEvent) => {
-                    if (progressEvent.lengthComputable) {
-                        const percentComplete = (progressEvent.loaded / progressEvent.total) * 100;
-                        progressBarFill.style.width = percentComplete + "%";
+            try {
+                const response = await progressFetch("/api/upload", {
+                    method: "POST",
+                    body: formData,
+                    onUploadProgress: (progressEvent) => {
+                        if (progressEvent.lengthComputable) {
+                            const percentComplete = (progressEvent.loaded / progressEvent.total) * 100;
+                            progressBarFill.style.width = percentComplete + "%";
+                        }
                     }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+
+                    const storedFiles = localStorage.getItem("uploadedFiles");
+                    const files = storedFiles ? JSON.parse(storedFiles) : [];
+                    files.push(data);
+                    localStorage.setItem("uploadedFiles", JSON.stringify(files));
+
+                    window.location.href = data.link;
+                } else {
+                    const errorData = await response.json();
+                    fileError.textContent = errorData.error || "An error occurred during upload.";
                 }
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-
-                const storedFiles = localStorage.getItem("uploadedFiles");
-                const files = storedFiles ? JSON.parse(storedFiles) : [];
-                files.push(data);
-                localStorage.setItem("uploadedFiles", JSON.stringify(files));
-
-                window.location.href = data.link;
-            } else {
-                const errorData = await response.json();
-                fileError.textContent = errorData.error || "An error occurred during upload.";
+            } catch (error) {
+                fileError.textContent = "An error occurred during upload.";
+            } finally {
+                uploadStatus.textContent = "";
+                progressBar.style.display = "none";
             }
-        } catch (error) {
-            fileError.textContent = "An error occurred during upload.";
-        } finally {
-            uploadStatus.textContent = "";
-            progressBar.style.display = "none";
+        } else {
+            const albumId = generateRandomString(8);
+            const uploadedFiles: any[] = [];
+
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const formData = new FormData();
+                formData.append("file", file);
+                formData.append("albumId", albumId);
+
+                try {
+                    const response = await progressFetch("/api/upload", {
+                        method: "POST",
+                        body: formData,
+                        onUploadProgress: (progressEvent) => {
+                            if (progressEvent.lengthComputable) {
+                                const percentComplete = (progressEvent.loaded / progressEvent.total) * 100;
+                                progressBarFill.style.width = percentComplete + "%";
+                            }
+                        }
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        uploadedFiles.push(data);
+                    } else {
+                        const errorData = await response.json();
+                        fileError.textContent = errorData.error || "An error occurred during upload.";
+                    }
+                } catch (error) {
+                    fileError.textContent = "An error occurred during upload.";
+                }
+            }
+
+            const storedAlbums = localStorage.getItem("uploadedAlbums") || "[]";
+            const albums = JSON.parse(storedAlbums);
+            albums.push({ id: albumId, files: uploadedFiles });
+            localStorage.setItem("uploadedAlbums", JSON.stringify(albums));
+
+            window.location.href = `/a/${albumId}`;
         }
     }
 </script>

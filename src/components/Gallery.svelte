@@ -13,6 +13,8 @@
         link: string;
         delete: string;
         embed: string;
+        albumId?: string;
+        thumbnail?: string;
     }
 
     export let initialFiles = [];
@@ -34,9 +36,41 @@
             files = JSON.parse(storedFiles);
             files.sort((a, b) => b.timestamp - a.timestamp);
         }
+
+        const storedAlbums = localStorage.getItem("uploadedAlbums");
+        if (storedAlbums) {
+            const albums = JSON.parse(storedAlbums);
+            albums.forEach(album => {
+                const thumbnailUrl = album.files.length > 0 ? album.files[0].link : "";
+                files.push({
+                    id: album.id,
+                    name: album.id,
+                    ext: "",
+                    embed: "",
+                    timestamp: album.files[0].timestamp,
+                    type: "album",
+                    key: album.id,
+                    link: `/a/${album.id}`,
+                    delete: `/api/delete?albumId=${album.id}`,
+                    albumId: album.id,
+                    thumbnail: thumbnailUrl
+                });
+            });
+        }
+
+        files.sort((a, b) => b.timestamp - a.timestamp);
     }
 
     function removeFile(index: number) {
+        const file = files[index];
+
+        if (file.type === "album") {
+            const storedAlbums = localStorage.getItem("uploadedAlbums") || "[]";
+            const albums = JSON.parse(storedAlbums);
+            const updatedAlbums = albums.filter(album => album.id !== file.id);
+            localStorage.setItem("uploadedAlbums", JSON.stringify(updatedAlbums));
+        }
+
         files = files.filter((_, i) => i !== index);
         localStorage.setItem("uploadedFiles", JSON.stringify(files));
     }
@@ -47,14 +81,16 @@
                 const response = await fetch(file.delete, {
                     method: "GET"
                 });
+
                 if (response.ok) {
                     removeFile(index);
                 } else {
                     const errorData = await response.json();
-                    alert(`Error deleting file: ${errorData.error}`);
+                    alert(`Request failed with status ${response.status}: ${errorData.message}`);
                 }
             } catch (error) {
-                alert(`Error deleting file: ${error}`);
+                console.log(error)
+                alert(`An error occurred while deleting the file: ${error}`);
             }
             finally {
                 location.reload();
@@ -109,7 +145,16 @@
     {:else}
         {#each files as file, index}
             <div class="file-card slide-in" style="animation-delay: {index * 0.05}s">
-                {#if file.type.startsWith("image/")}
+                {#if file.type === "album"}
+                    <!-- svelte-ignore a11y-click-events-have-key-events -->
+                    <!-- svelte-ignore a11y-no-static-element-interactions -->
+                    <div class="album-preview" on:click={() => window.location.href = file.link}>
+                        {#if file.thumbnail}
+                            <LazyImage src={file.thumbnail} alt={file.name} />
+                        {/if}
+                        <span class="album-label">Album</span>
+                    </div>
+                {:else if file.type.startsWith("image/")}
                 <!-- svelte-ignore a11y-click-events-have-key-events -->
                 <!-- svelte-ignore a11y-no-static-element-interactions -->
                     <div class="image-container" on:click={() => openModal(file)}>
@@ -281,5 +326,25 @@
 
     .image-container:hover {
         transform: scale(1.05);
+    }
+
+    .album-preview {
+        position: relative;
+        width: 100%;
+        height: 150px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        cursor: pointer;
+        overflow: hidden;
+    }
+
+    .album-label {
+        position: absolute;
+        bottom: 10px;
+        left: 10px;
+        background-color: rgba(0, 0, 0, 0.5);
+        color: white;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
     }
 </style>

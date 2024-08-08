@@ -76,6 +76,8 @@ export const POST: APIRoute = async ({ request, locals, site }) => {
             return createErrorResponse(RATE_LIMIT_EXCEEDED, 429);
         }
 
+        const albumId = formData.get("albumId") as string | null;
+
         await bucket.put(fileName, await file.arrayBuffer(), {
             httpMetadata: { contentType: file.type }
         });
@@ -91,6 +93,7 @@ export const POST: APIRoute = async ({ request, locals, site }) => {
 
         const fileInfo = {
             id,
+            albumId,
             ext: `.${fileExtension}`,
             name: file.name.split(".")[0],
             type: file.type,
@@ -109,9 +112,16 @@ export const POST: APIRoute = async ({ request, locals, site }) => {
             setCachedData(key, id, kv)
         ]);
 
-        const galleryList = await kv.get(GALLERY_FILE_LIST_KEY, "json") || [];
-        galleryList.unshift(fileInfo);
-        await setCachedData(GALLERY_FILE_LIST_KEY, galleryList, kv);
+        if (albumId) {
+            const albumKey = `album:${albumId}`;
+            const existingAlbum = await getCachedData(albumKey, kv) || [];
+            existingAlbum.push(fileInfo);
+            await setCachedData(albumKey, existingAlbum, kv);
+        } else {
+            const galleryList = await kv.get(GALLERY_FILE_LIST_KEY, "json") || [];
+            galleryList.unshift(fileInfo);
+            await setCachedData(GALLERY_FILE_LIST_KEY, galleryList, kv);
+        }
 
         const response = new Response(JSON.stringify(fileInfo), { status: 200 });
         return cache(response, 0);

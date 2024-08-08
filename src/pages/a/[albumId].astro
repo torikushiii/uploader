@@ -1,0 +1,15 @@
+---
+export const prerender = false;
+import Layout from "layouts/Layout.astro";
+import AlbumGallery from "components/AlbumGallery.svelte";
+
+const { albumId } = Astro.params;
+
+const title = `Album ${albumId}`;
+const description = `Image album ${albumId}`;
+---
+
+<Layout title={title} description={description}>
+    <h1>Your Uploaded Images</h1>
+    <AlbumGallery albumId={albumId} client:load />
+</Layout>
