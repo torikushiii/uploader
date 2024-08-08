@@ -2,7 +2,7 @@
 import ProgressBar from "./ProgressBar.astro";
 import ErrorMessage from "./ErrorMessage.astro";
 
-import { ALLOWED_FILE_TYPES, MAX_FILE_SIZE } from "utils/constants";
+import { ALLOWED_FILE_TYPES } from "utils/constants";
 ---
 
 <div id="dropArea" class="hidden">
@@ -114,7 +114,7 @@ import { ALLOWED_FILE_TYPES, MAX_FILE_SIZE } from "utils/constants";
         document.addEventListener(eventType, handleDragEvent as EventListener);
     });
 
-    document.addEventListener("paste", (e: ClipboardEvent) => {
+    document.addEventListener("paste", async (e: ClipboardEvent) => {
         e.preventDefault();
         const items = e.clipboardData?.items;
         if (items) {
@@ -122,7 +122,12 @@ import { ALLOWED_FILE_TYPES, MAX_FILE_SIZE } from "utils/constants";
                 if (items[i].type.indexOf("image") !== -1 || items[i].type.indexOf("video") !== -1) {
                     const file = items[i].getAsFile();
                     if (file) {
-                        handleFile(file);
+                        const validationResult = validateFile(file, ALLOWED_FILE_TYPES, MAX_FILE_SIZE);
+                        if (validationResult.valid) {
+                            await uploadFile(file);
+                        } else {
+                            fileError.textContent = validationResult.error || "Unknown error";
+                        }
                         break;
                     }
                 }
@@ -145,48 +150,52 @@ import { ALLOWED_FILE_TYPES, MAX_FILE_SIZE } from "utils/constants";
     uploadForm.addEventListener("submit", async (event: Event) => {
         event.preventDefault();
         if (selectedFile) {
-            uploadStatus.textContent = "Uploading...";
-            progressBar.style.display = "block";
-            progressBarFill.style.width = "0%";
-
-            const formData = new FormData();
-            formData.append("file", selectedFile);
-
-            try {
-                const response = await progressFetch("/api/upload", {
-                    method: "POST",
-                    body: formData,
-                    onUploadProgress: (progressEvent) => {
-                        if (progressEvent.lengthComputable) {
-                            const percentComplete = (progressEvent.loaded / progressEvent.total) * 100;
-                            progressBarFill.style.width = percentComplete + "%";
-                        }
-                    }
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-
-                    const storedFiles = localStorage.getItem("uploadedFiles");
-                    const files = storedFiles ? JSON.parse(storedFiles) : [];
-                    files.push(data);
-                    localStorage.setItem("uploadedFiles", JSON.stringify(files));
-
-                    window.location.href = data.link;
-                } else {
-                    const errorData = await response.json();
-                    fileError.textContent = errorData.error || "An error occurred during upload.";
-                }
-            } catch (error) {
-                fileError.textContent = "An error occurred during upload.";
-            } finally {
-                uploadStatus.textContent = "";
-                progressBar.style.display = "none";
-            }
+            await uploadFile(selectedFile);
         } else {
             fileError.textContent = "Please select a valid file to upload.";
         }
     });
+
+    async function uploadFile(file: File) {
+        uploadStatus.textContent = "Uploading...";
+        progressBar.style.display = "block";
+        progressBarFill.style.width = "0%";
+
+        const formData = new FormData();
+        formData.append("file", file);
+
+        try {
+            const response = await progressFetch("/api/upload", {
+                method: "POST",
+                body: formData,
+                onUploadProgress: (progressEvent) => {
+                    if (progressEvent.lengthComputable) {
+                        const percentComplete = (progressEvent.loaded / progressEvent.total) * 100;
+                        progressBarFill.style.width = percentComplete + "%";
+                    }
+                }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+
+                const storedFiles = localStorage.getItem("uploadedFiles");
+                const files = storedFiles ? JSON.parse(storedFiles) : [];
+                files.push(data);
+                localStorage.setItem("uploadedFiles", JSON.stringify(files));
+
+                window.location.href = data.link;
+            } else {
+                const errorData = await response.json();
+                fileError.textContent = errorData.error || "An error occurred during upload.";
+            }
+        } catch (error) {
+            fileError.textContent = "An error occurred during upload.";
+        } finally {
+            uploadStatus.textContent = "";
+            progressBar.style.display = "none";
+        }
+    }
 </script>
 
 <style>
