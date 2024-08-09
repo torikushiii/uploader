@@ -66,10 +66,14 @@ export const GET: APIRoute = async ({ request, locals }) => {
                 return createErrorResponse(ALBUM_NOT_FOUND, 404);
             }
 
+            // @ts-expect-error
+            const albumBucket = locals.runtime.env.ALBUM_BUCKET;
+            await albumBucket.delete(albumKey);
+
             await Promise.all(albumData.map(async (file) => {
-                await bucket.delete(file.id + file.ext);
-                await bucket.delete(`${file.id}_metadata`);
-                await bucket.delete(`${file.key}_metadata`);
+                bucket.delete(file.id + file.ext);
+                bucket.delete(`${file.id}_metadata`);
+                bucket.delete(`${file.key}_metadata`);
             }));
 
             await kv.delete(albumKey);

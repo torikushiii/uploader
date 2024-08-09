@@ -281,6 +281,22 @@ import { ALLOWED_FILE_TYPES } from "utils/constants";
             albums.push({ id: albumId, files: uploadedFiles });
             localStorage.setItem("uploadedAlbums", JSON.stringify(albums));
 
+            try {
+                const response = await fetch(`/api/album/${albumId}`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ id: albumId, files: uploadedFiles })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+            } catch (error) {
+                console.error("Error saving album:", error);
+            }
+
             window.location.href = `/a/${albumId}`;
         }
     }

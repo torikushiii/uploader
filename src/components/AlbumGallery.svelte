@@ -2,13 +2,25 @@
     import { onMount } from "svelte";
     export let albumId;
 
-    let album;
+    let album = null;
 
-    onMount(() => {
-        const storedAlbums = localStorage.getItem("uploadedAlbums") || "[]";
-        const albums = JSON.parse(storedAlbums);
-        album = albums.find((album) => album.id === albumId);
-    });
+    async function fetchAlbumData() {
+        try {
+            const response = await fetch(`/api/album/${albumId}`);
+            
+            if (response.ok) {
+                album = await response.json();
+            } else if (response.status === 404) {
+                album = null;
+            } else {
+                console.error("Failed to fetch album data");
+            }
+        } catch (error) {
+            console.error("Error fetching album data:", error);
+        }
+    }
+
+    onMount(fetchAlbumData);
 
     function copyAlbumLink() {
         navigator.clipboard.writeText(window.location.href)
@@ -46,24 +58,8 @@
                 {#if album.files.length > 0}
                     <img src={album.files[0].link} alt={album.files[0].name} />
                     <div class="album-tools">
-                        <button
-                            on:click={copyAlbumLink}
-                            title="Copy Album Link"
-                        >
-                            <img
-                                src="/assets/copy.svg"
-                                alt="Copy"
-                                width="18"
-                                height="18"
-                            />
-                        </button>
-                        <button on:click={deleteAlbum} title="Delete Album">
-                            <img
-                                src="/assets/delete.svg"
-                                alt="Delete"
-                                width="18"
-                                height="18"
-                            />
+                        <button on:click={copyAlbumLink} title="Copy Album Link">
+                            <img src="/assets/copy.svg" alt="Copy" width="18" height="18" />
                         </button>
                     </div>
                 {/if}
