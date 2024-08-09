@@ -3,6 +3,7 @@
     export let albumId;
 
     let album = null;
+    let loading = true;
 
     async function fetchAlbumData() {
         try {
@@ -17,6 +18,9 @@
             }
         } catch (error) {
             console.error("Error fetching album data:", error);
+        }
+        finally {
+            loading = false;
         }
     }
 
@@ -53,7 +57,9 @@
 
 <div class="album-container">
     <div class="gallery">
-        {#if album}
+        {#if loading}
+            <p>Loading album data...</p> 
+        {:else if album}
             <div class="first-image-container">
                 {#if album.files.length > 0}
                     <img src={album.files[0].link} alt={album.files[0].name} />
@@ -68,7 +74,7 @@
                 <img src={file.link} alt={file.name} />
             {/each}
         {:else}
-            <p>Album not found.</p>
+            <p>Album doesn't exist.</p> 
         {/if}
     </div>
 </div>
