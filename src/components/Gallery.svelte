@@ -206,9 +206,11 @@
                         <button class="icon-button copy" on:click={() => copyLink(file.link)} title="Copy Link">
                             <img src="/assets/copy.svg" alt="Copy" width="18" height="18" />
                         </button>
-                        <button class="icon-button download" on:click={() => downloadFile(file.link, file.name + file.ext)} title="Download">
-                            <img src="/assets/download.svg" alt="Download" width="18" height="18" />
-                        </button>
+                        {#if file.type !== "album"}
+                            <button class="icon-button download" on:click={() => downloadFile(file.link, file.name + file.ext)} title="Download">
+                                <img src="/assets/download.svg" alt="Download" width="18" height="18" />
+                            </button>
+                        {/if}
                         <button class="icon-button newtab" on:click={() => window.open(file.link, "_blank")} title="Open in new tab">
                             <img src="/assets/newtab.svg" alt="Open in new tab" width="18" height="18" />
                         </button>
