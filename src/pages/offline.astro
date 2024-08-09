@@ -1,16 +1,19 @@
 ---
-import Layout from "../layouts/Layout.astro";
+import Layout from "layouts/Layout.astro";
+import CenteredBody from "components/CenteredBody.astro";
 
 const title = "Offline";
 const description = "You are currently offline";
 ---
 
 <Layout title={title} description={description}>
-    <main>
-        <h1>You're Offline</h1>
-        <p>It seems you've lost your internet connection. Please check your network and try again.</p>
-        <button onclick="window.location.reload()">Try Again</button>
-    </main>
+    <CenteredBody>
+        <main>
+            <h1>You're Offline</h1>
+            <p>It seems you've lost your internet connection. Please check your network and try again.</p>
+            <button onclick="window.location.reload()">Try Again</button>
+        </main>
+    </CenteredBody>
 </Layout>
 
 <style>

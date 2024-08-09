@@ -10,15 +10,18 @@ export function GET({ request }) {
 
 import Layout from "../layouts/Layout.astro";
 import FileUpload from "../components/FileUpload.astro";
+import CenteredBody from "components/CenteredBody.astro";
 
 const title = "Image Uploader";
 const description = "Upload images/videos up to 100MB";
 ---
 
 <Layout title={title} description={description}>
-    <h1>Upload a File</h1>
-    <div style="display: flex; justify-content: center; align-items: center;">
-        <p>File size limit: 100MB</p>
-    </div>
-    <FileUpload />
+    <CenteredBody>
+        <h1>Upload a File</h1>
+        <div style="display: flex; justify-content: center; align-items: center;">
+            <p>File size limit: 100MB</p>
+        </div>
+        <FileUpload />
+    </CenteredBody>
 </Layout>

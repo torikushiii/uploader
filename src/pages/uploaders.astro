@@ -1,5 +1,6 @@
 ---
-import Layout from "../layouts/Layout.astro";
+import Layout from "layouts/Layout.astro";
+import CenteredBody from "components/CenteredBody.astro";
 
 const title = "Uploaders";
 const description = "Various uploader configurations and API usage";
@@ -8,53 +9,55 @@ const domain = Astro.url.origin;
 ---
 
 <Layout title={title} description={description}>
-    <div class="container">
-        <h1>Uploaders</h1>
-
-        <section>
-            <h2>ShareX</h2>
-            <p>Download the ShareX configuration file: <a href="/config.sxcu" download>config.sxcu</a></p>
-        </section>
-
-        <section>
-            <h2>Chatterino</h2>
-            <ul>
-                <li><strong>Request URL:</strong> <code>{domain}/api/upload</code></li>
-                <li><strong>Form Field:</strong> <code>file</code></li>
-                <li><strong>Image Link:</strong> <code>{"{link}"}</code></li>
-                <li><strong>Deletion Link:</strong> <code>{"{delete}"}</code></li>
-            </ul>
-        </section>
-
-        <section>
-            <h2>API</h2>
-            <h3>Uploading an Image</h3>
-            <pre><code>curl -X POST -F "file=@/path/to/your/file.jpg" {domain}/api/upload</code></pre>
-            
-            <h3>Upload Response Example</h3>
-            <pre><code>{`{
-    "id": "abcd1",
-    "ext": ".jpg",
-    "name": "example",
-    "type": "image/jpeg",
-    "key": "randomkey123456",
-    "link": "${domain}/abcd1.jpg",
-    "delete": "${domain}/api/delete?key=randomkey123456",
-    "embed": "${domain}/v/abcd1",
-    "width": 1920,
-    "height": 1080,
-    "timestamp": 1628097600000
-}`}</code></pre>
-
-            <h3>Deleting an Image</h3>
-            <pre><code>curl -X GET "{domain}/api/delete?key=randomkey123456"</code></pre>
-
-            <h3>Delete Response Example</h3>
-            <pre><code>{`{
-    "message": "File deleted successfully"
-}`}</code></pre>
-        </section>
-    </div>
+    <CenteredBody>
+        <div class="container">
+            <h1>Uploaders</h1>
+    
+            <section>
+                <h2>ShareX</h2>
+                <p>Download the ShareX configuration file: <a href="/config.sxcu" download>config.sxcu</a></p>
+            </section>
+    
+            <section>
+                <h2>Chatterino</h2>
+                <ul>
+                    <li><strong>Request URL:</strong> <code>{domain}/api/upload</code></li>
+                    <li><strong>Form Field:</strong> <code>file</code></li>
+                    <li><strong>Image Link:</strong> <code>{"{link}"}</code></li>
+                    <li><strong>Deletion Link:</strong> <code>{"{delete}"}</code></li>
+                </ul>
+            </section>
+    
+            <section>
+                <h2>API</h2>
+                <h3>Uploading an Image</h3>
+                <pre><code>curl -X POST -F "file=@/path/to/your/file.jpg" {domain}/api/upload</code></pre>
+                
+                <h3>Upload Response Example</h3>
+                <pre><code>{`{
+        "id": "abcd1",
+        "ext": ".jpg",
+        "name": "example",
+        "type": "image/jpeg",
+        "key": "randomkey123456",
+        "link": "${domain}/abcd1.jpg",
+        "delete": "${domain}/api/delete?key=randomkey123456",
+        "embed": "${domain}/v/abcd1",
+        "width": 1920,
+        "height": 1080,
+        "timestamp": 1628097600000
+    }`}</code></pre>
+    
+                <h3>Deleting an Image</h3>
+                <pre><code>curl -X GET "{domain}/api/delete?key=randomkey123456"</code></pre>
+    
+                <h3>Delete Response Example</h3>
+                <pre><code>{`{
+        "message": "File deleted successfully"
+    }`}</code></pre>
+            </section>
+        </div>
+    </CenteredBody>
 </Layout>
 
 <style>
