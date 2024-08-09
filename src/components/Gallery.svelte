@@ -65,14 +65,20 @@
         const file = files[index];
 
         if (file.type === "album") {
+            files = files.filter((_, i) => i !== index);
+
             const storedAlbums = localStorage.getItem("uploadedAlbums") || "[]";
             const albums = JSON.parse(storedAlbums);
             const updatedAlbums = albums.filter(album => album.id !== file.id);
             localStorage.setItem("uploadedAlbums", JSON.stringify(updatedAlbums));
-        }
+        } else {
+            files = files.filter((_, i) => i !== index);
 
-        files = files.filter((_, i) => i !== index);
-        localStorage.setItem("uploadedFiles", JSON.stringify(files));
+            const storedFiles = localStorage.getItem("uploadedFiles") || "[]";
+            const filesInLocalStorage = JSON.parse(storedFiles);
+            const updatedFiles = filesInLocalStorage.filter(f => f.key !== file.key);
+            localStorage.setItem("uploadedFiles", JSON.stringify(updatedFiles));
+        }
     }
 
     async function deleteFile(file: FileInfo, index: number) {
@@ -83,7 +89,26 @@
                 });
 
                 if (response.ok) {
+                    if (file.albumId) {
+                        const storedAlbums = localStorage.getItem("uploadedAlbums") || "[]";
+                        const albums = JSON.parse(storedAlbums);
+                        const albumIndex = albums.findIndex(album => album.id === file.albumId);
+                        if (albumIndex !== -1) {
+                            albums[albumIndex].files = albums[albumIndex].files.filter(f => f.key !== file.key);
+                            if (albums[albumIndex].files.length === 0) {
+                                albums.splice(albumIndex, 1);
+                            }
+                            localStorage.setItem("uploadedAlbums", JSON.stringify(albums));
+                        }
+                    } else {
+                        const storedFiles = localStorage.getItem("uploadedFiles") || "[]";
+                        const files = JSON.parse(storedFiles);
+                        const updatedFiles = files.filter(f => f.key !== file.key);
+                        localStorage.setItem("uploadedFiles", JSON.stringify(updatedFiles));
+                    }
+
                     removeFile(index);
+                    loadFiles();
                 } else {
                     const errorData = await response.json();
                     alert(`Request failed with status ${response.status}: ${errorData.message}`);
