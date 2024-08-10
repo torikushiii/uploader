@@ -3,6 +3,7 @@
     import LazyImage from "./LazyImage.svelte";
     import { loadComponent } from "utils/component-loader";
 
+    const DOMAIN = window.location.origin;
     interface FileInfo {
         id: string;
         name: string;
@@ -148,7 +149,6 @@
 
     function copyLink(link: string) {
         navigator.clipboard.writeText(link)
-            .then(() => alert("Link copied to clipboard!"))
             .catch(err => console.error("Error copying link: ", err));
     }
 
@@ -203,7 +203,7 @@
                 </div>
                 <div class="file-actions">
                     <div class="file-actions">
-                        <button class="icon-button copy" on:click={() => copyLink(file.link)} title="Copy Link">
+                        <button class="icon-button copy" on:click={() => copyLink(file.type === "album" ? `${DOMAIN}${file.link}` : file.link)} title="Copy Link">
                             <img src="/assets/copy.svg" alt="Copy" width="18" height="18" />
                         </button>
                         {#if file.type !== "album"}
