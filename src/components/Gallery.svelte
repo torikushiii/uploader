@@ -86,7 +86,7 @@
         if (confirm("Are you sure you want to delete this file? This action cannot be undone.")) {
             try {
                 const response = await fetch(file.delete, {
-                    method: "GET"
+                    method: "DELETE"
                 });
 
                 if (response.ok) {
