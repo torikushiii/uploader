@@ -1,8 +1,7 @@
-const CACHE_NAME = "uploader-v4";
-const OFFLINE_URL = "/offline";
+const CACHE_NAME = "uploader-v5";
 const PRECACHE_RESOURCES = [
     "/",
-    OFFLINE_URL,
+    "/offline",
     "/ChenComfy.png"
 ];
 
@@ -31,6 +30,9 @@ self.addEventListener("activate", async event => {
 
 self.addEventListener("fetch", event => {
     if (event.request.method === "POST" && event.request.url.includes("/api/upload")) {
+        return;
+    }
+    if (event.request.method === "POST" || event.request.method === "PUT" || event.request.method === "DELETE") {
         return;
     }
 
