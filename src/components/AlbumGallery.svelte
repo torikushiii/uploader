@@ -5,6 +5,7 @@
     let album = null;
     let loading = true;
     let isOwner = false;
+    let albumKey = "";
 
     async function fetchAlbumData() {
         try {
@@ -28,7 +29,12 @@
 
     function checkOwnership() {
         const storedAlbums = JSON.parse(localStorage.getItem("uploadedAlbums") || "[]");
-        isOwner = storedAlbums.some(album => album.id === albumId);
+
+        const storedAlbum = storedAlbums.find(album => album.id === albumId);
+        if (storedAlbum) {
+            isOwner = true;
+            albumKey = storedAlbum.key;
+        }
     }
 
     onMount(fetchAlbumData);
@@ -51,7 +57,11 @@
 
                 if (albumData) {
                     const response = await fetch(`/api/delete?albumId=${albumId}`, {
-                        method: "GET"
+                        method: "DELETE",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({ albumKey })
                     });
 
                     if (!response.ok) {

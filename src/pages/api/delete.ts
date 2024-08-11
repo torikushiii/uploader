@@ -5,6 +5,7 @@ import { getCachedData, setCachedData, invalidateCache } from "utils/kv-cache";
 const INVALID_DELETE_REQUEST = "Invalid delete request";
 const FILE_NOT_FOUND = "File not found";
 const ALBUM_NOT_FOUND = "Album not found";
+const UNAUTHORIZED = "Unauthorized";
 const METHOD_NOT_ALLOWED = "Method not allowed";
 const ERROR_DELETING_FILE = "Error deleting file";
 const ERROR_DELETING_ALBUM = "Error deleting album";
@@ -13,12 +14,20 @@ const createErrorResponse = (message: string, status: number) => {
     return new Response(JSON.stringify({ error: message }), { status });
 };
 
-export const GET: APIRoute = async ({ request, locals }) => {
+export const DELETE: APIRoute = async ({ request, locals }) => {
     const url = new URL(request.url);
     const key = url.searchParams.get("key");
     const albumId = url.searchParams.get("albumId");
 
-    if (!key && !albumId) {
+    let albumKey: string | undefined;
+    try {
+        const body = await request.json();
+        albumKey = body.albumKey;
+    } catch (error) {
+        console.error("Error parsing request body:", error);
+    }
+
+    if ((!key && !albumId) || (albumId && !albumKey)) {
         return createErrorResponse(INVALID_DELETE_REQUEST, 400);
     }
 
@@ -59,22 +68,18 @@ export const GET: APIRoute = async ({ request, locals }) => {
             const response = new Response(JSON.stringify({ message: "File deleted successfully" }), { status: 200 });
             return cache(response, 0);
         } else if (albumId) {
-            const albumKey = `album:${albumId}`;
-            let albumData = await getCachedData(albumKey, kv);
+            const albumKeyPrefix = `album:${albumId}`;
+            // @ts-expect-error
+            const albumBucket = locals.runtime.env.ALBUM_BUCKET;
+            const albumResponse = await albumBucket.get(albumKeyPrefix);
 
-            if (albumData) {
-                albumData.files = albumData || [];
+            if (!albumResponse) {
+                return createErrorResponse(ALBUM_NOT_FOUND, 404);
             }
-            else {
-                // @ts-expect-error
-                const albumBucket = locals.runtime.env.ALBUM_BUCKET;
-                const albumResponse = await albumBucket.get(albumKey);
 
-                if (!albumResponse) {
-                    return createErrorResponse(ALBUM_NOT_FOUND, 404);
-                }
-
-                albumData = JSON.parse(await albumResponse.text());
+            const albumData = JSON.parse(await albumResponse.text());
+            if (albumData.key !== albumKey) {
+                return createErrorResponse(UNAUTHORIZED, 401);
             }
 
             await Promise.all(albumData.files.map(async (file) => {
@@ -83,11 +88,8 @@ export const GET: APIRoute = async ({ request, locals }) => {
                 bucket.delete(`${file.key}_metadata`);
             }));
 
-            // @ts-expect-error
-            const albumBucket = locals.runtime.env.ALBUM_BUCKET;
-            await albumBucket.delete(albumKey);
-        
-            await kv.delete(albumKey);
+            await albumBucket.delete(albumKeyPrefix);
+            await kv.delete(albumKeyPrefix);
             await invalidateCache("gallery_file_list", kv);
 
             const response = new Response(JSON.stringify({ message: "Album deleted successfully" }), { status: 200 });
@@ -99,6 +101,11 @@ export const GET: APIRoute = async ({ request, locals }) => {
         console.error(error);
         return key ? createErrorResponse(ERROR_DELETING_FILE, 500) : createErrorResponse(ERROR_DELETING_ALBUM, 500);
     }
+};
+
+export const GET: APIRoute = async () => {
+    const response = createErrorResponse(METHOD_NOT_ALLOWED, 405);
+    return cache(response, 0);
 };
 
 export const POST: APIRoute = async () => {
