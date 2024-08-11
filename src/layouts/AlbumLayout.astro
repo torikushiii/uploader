@@ -1,0 +1,60 @@
+---
+import "normalize.css";
+import "styles/global.css";
+
+import NavBar from "components/NavBar.astro";
+import { AUTHOR, THEME_COLOUR, ICON } from "scripts/constants";
+
+export interface Props {
+    title: string;
+    description: string;
+    albumId: string;
+    albumFiles: Array<{
+        link: string;
+        name: string;
+        type: string;
+    }>;
+}
+
+const { title, description, albumId, albumFiles } = Astro.props;
+
+const imageList = albumFiles
+    .filter((file) => file.type.startsWith("image"))
+    .map((file) => ({
+        link: file.link,
+        name: file.name,
+    }))
+    .slice(0, 2);
+---
+
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link rel="icon" href={ICON} />
+
+        <meta property="og:title" content={title} />
+        <meta property="og:description" content={description} />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content={Astro.url} />
+
+        {imageList.map((image) => (
+            <meta property="og:image" content={image.link} />
+        ))}
+
+        <meta name="author" content={AUTHOR} />
+        <meta name="theme-color" content={THEME_COLOUR} />
+
+        <meta name="darkreader-lock" />
+    </head>
+    <body>
+        <header>
+            <NavBar title={title} />
+        </header>
+
+        <main>
+            <slot />
+        </main>
+    </body>
+</html>

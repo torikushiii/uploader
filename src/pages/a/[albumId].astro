@@ -1,14 +1,36 @@
 ---
 export const prerender = false;
-import Layout from "layouts/Layout.astro";
+import AlbumLayout from "layouts/AlbumLayout.astro";
 import AlbumGallery from "components/AlbumGallery.svelte";
 
 const { albumId } = Astro.params;
 
+if (typeof albumId !== 'string') {
+    return Astro.redirect("/404");
+}
+
+let albumData: any;
+let error: unknown = null;
+
+try {
+    const response = await fetch(`${Astro.url.origin}/api/album/${albumId}`);
+    if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    albumData = await response.json();
+} catch (err) {
+    console.error("Error fetching album data:", err);
+    error = err;
+}
+
+if (error) {
+    return Astro.redirect("/404");
+}
+
 const title = `Album ${albumId}`;
-const description = `Image album ${albumId}`;
+const description = `Image album ${albumId} - ${albumData.files.length} images`;
 ---
 
-<Layout title={title} description={description}>
+<AlbumLayout title={title} description={description} albumId={albumId} albumFiles={albumData.files}>
     <AlbumGallery albumId={albumId} client:load />
-</Layout>
+</AlbumLayout>
