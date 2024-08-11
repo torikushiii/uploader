@@ -85,34 +85,51 @@
     async function deleteFile(file: FileInfo, index: number) {
         if (confirm("Are you sure you want to delete this file? This action cannot be undone.")) {
             try {
-                const response = await fetch(file.delete, {
-                    method: "DELETE"
-                });
+                if (file.type === "album") {
+                    const storedAlbums = localStorage.getItem("uploadedAlbums") || "[]";
+                    const albums = JSON.parse(storedAlbums);
+                    const album = albums.find(a => a.id === file.id);
 
-                if (response.ok) {
-                    if (file.albumId) {
+                    const response = await fetch(file.delete, {
+                        method: "DELETE",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({ albumKey: album.key })
+                    });
+
+                    if (response.ok) {
                         const storedAlbums = localStorage.getItem("uploadedAlbums") || "[]";
                         const albums = JSON.parse(storedAlbums);
-                        const albumIndex = albums.findIndex(album => album.id === file.albumId);
-                        if (albumIndex !== -1) {
-                            albums[albumIndex].files = albums[albumIndex].files.filter(f => f.key !== file.key);
-                            if (albums[albumIndex].files.length === 0) {
-                                albums.splice(albumIndex, 1);
-                            }
-                            localStorage.setItem("uploadedAlbums", JSON.stringify(albums));
-                        }
-                    } else {
+                        const updatedAlbums = albums.filter(a => a.id !== file.id);
+                        localStorage.setItem("uploadedAlbums", JSON.stringify(updatedAlbums));
+
+                        removeFile(index);
+                        loadFiles();
+                    }
+                    else {
+                        const errorData = await response.json();
+                        alert(`Request failed with status ${response.status}: ${errorData.message || "An error occurred"}`);
+                    }
+                }
+                else {
+                    const response = await fetch(file.delete, {
+                        method: "DELETE"
+                    });
+
+                    if (response.ok) {
                         const storedFiles = localStorage.getItem("uploadedFiles") || "[]";
                         const files = JSON.parse(storedFiles);
                         const updatedFiles = files.filter(f => f.key !== file.key);
                         localStorage.setItem("uploadedFiles", JSON.stringify(updatedFiles));
-                    }
 
-                    removeFile(index);
-                    loadFiles();
-                } else {
-                    const errorData = await response.json();
-                    alert(`Request failed with status ${response.status}: ${errorData.message}`);
+                        removeFile(index);
+                        loadFiles();
+                    }
+                    else {
+                        const errorData = await response.json();
+                        alert(`Request failed with status ${response.status}: ${errorData.message || "An error occurred"}`);
+                    }
                 }
             } catch (error) {
                 console.log(error)

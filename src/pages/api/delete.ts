@@ -21,8 +21,10 @@ export const DELETE: APIRoute = async ({ request, locals }) => {
 
     let albumKey: string | undefined;
     try {
-        const body = await request.json();
-        albumKey = body.albumKey;
+        if (request.body) {
+            const body = await request.json();
+            albumKey = body.albumKey;
+        }
     } catch (error) {
         console.error("Error parsing request body:", error);
     }
