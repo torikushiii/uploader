@@ -1,4 +1,4 @@
-const CACHE_NAME = "uploader-v5";
+const CACHE_NAME = "uploader-v6";
 const PRECACHE_RESOURCES = [
     "/",
     "/offline",
@@ -29,15 +29,12 @@ self.addEventListener("activate", async event => {
 });
 
 self.addEventListener("fetch", event => {
-    if (event.request.method === "POST" && event.request.url.includes("/api/upload")) {
-        return;
-    }
     if (event.request.method === "POST" || event.request.method === "PUT" || event.request.method === "DELETE") {
         return;
     }
 
     if (event.request.mode === "navigate" || (event.request.method === "GET" && event.request.headers.get("accept").includes("text/html"))) {
-        event.respondWith(fetch(event.request).catch(() => caches.match(OFFLINE_URL)));
+        event.respondWith(fetch(event.request).catch(() => caches.match("/offline")));
     } else {
         if (event.request.url.startsWith(self.location.origin)) {
             event.respondWith(
@@ -56,7 +53,7 @@ self.addEventListener("fetch", event => {
                     });
                 }).catch(() => {
                     if (event.request.mode === "navigate") {
-                        return caches.match(OFFLINE_URL);
+                        return caches.match("/offline");
                     }
                 })
             );
