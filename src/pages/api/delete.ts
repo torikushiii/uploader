@@ -60,22 +60,33 @@ export const GET: APIRoute = async ({ request, locals }) => {
             return cache(response, 0);
         } else if (albumId) {
             const albumKey = `album:${albumId}`;
-            const albumData = await getCachedData(albumKey, kv);
+            let albumData = await getCachedData(albumKey, kv);
 
-            if (!albumData) {
-                return createErrorResponse(ALBUM_NOT_FOUND, 404);
+            if (albumData) {
+                albumData.files = albumData || [];
+            }
+            else {
+                // @ts-expect-error
+                const albumBucket = locals.runtime.env.ALBUM_BUCKET;
+                const albumResponse = await albumBucket.get(albumKey);
+
+                if (!albumResponse) {
+                    return createErrorResponse(ALBUM_NOT_FOUND, 404);
+                }
+
+                albumData = JSON.parse(await albumResponse.text());
             }
 
-            // @ts-expect-error
-            const albumBucket = locals.runtime.env.ALBUM_BUCKET;
-            await albumBucket.delete(albumKey);
-
-            await Promise.all(albumData.map(async (file) => {
+            await Promise.all(albumData.files.map(async (file) => {
                 bucket.delete(file.id + file.ext);
                 bucket.delete(`${file.id}_metadata`);
                 bucket.delete(`${file.key}_metadata`);
             }));
 
+            // @ts-expect-error
+            const albumBucket = locals.runtime.env.ALBUM_BUCKET;
+            await albumBucket.delete(albumKey);
+        
             await kv.delete(albumKey);
             await invalidateCache("gallery_file_list", kv);
 
