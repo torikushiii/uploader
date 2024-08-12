@@ -28,6 +28,14 @@
     onMount(() => loadFiles());
 
     function loadFiles() {
+        if (!localStorage.getItem("uploadedFiles")) {
+            localStorage.setItem("uploadedFiles", JSON.stringify([]));
+        }
+
+        if (!localStorage.getItem("uploadedAlbums")) {
+            localStorage.setItem("uploadedAlbums", JSON.stringify([]));
+        }
+
         const storedFiles = localStorage.getItem("uploadedFiles");
         if (storedFiles) {
             files = JSON.parse(storedFiles);
