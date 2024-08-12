@@ -25,11 +25,7 @@
     let isModalOpen = false;
     let ImageModal: any;
 
-    onMount(() => {
-        if (files.length === 0) {
-            loadFiles();
-        }
-    });
+    onMount(() => loadFiles());
 
     function loadFiles() {
         const storedFiles = localStorage.getItem("uploadedFiles");
