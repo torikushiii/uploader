@@ -64,10 +64,19 @@
         if (!confirm("Are you sure you want to delete this file? This action cannot be undone.")) return;
 
         try {
+            let albumKey: string | undefined;
+            if (file.type === "album") {
+                const storedAlbums = localStorage.getItem("uploadedAlbums") || "[]";
+                const albums = JSON.parse(storedAlbums);
+                const album = albums.find(a => a.id === file.id);
+
+                albumKey = album.key;
+            }
+
             const response = await fetch(file.delete, {
                 method: "DELETE",
                 headers: file.type === "album" ? { "Content-Type": "application/json" } : {},
-                body: file.type === "album" ? JSON.stringify({ albumKey: file.key }) : undefined
+                body: file.type === "album" ? JSON.stringify({ albumKey }) : undefined
             });
 
             if (response.ok) {
