@@ -47,7 +47,70 @@
     }
 
     function addMoreImages() {
-        alert("This feature is not implemented yet.");
+        const fileInput = document.createElement("input");
+        fileInput.type = "file";
+        fileInput.multiple = true;
+        fileInput.accept = "image/*";
+
+        fileInput.addEventListener("change", async (event) => {
+            const files = event.target.files;
+            if (files) {
+                await uploadMoreImages(files);
+            }
+        });
+
+        fileInput.click();
+    }
+
+    async function uploadMoreImages(files) {
+        const uploadedFiles = [];
+
+        for (const file of Array.from(files)) {
+            const formData = new FormData();
+            formData.append("file", file);
+            formData.append("albumId", albumId);
+
+            try {
+                const response = await fetch("/api/upload", {
+                    method: "POST",
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    uploadedFiles.push(data);
+                } else {
+                    const errorData = await response.json();
+                    alert(`Request failed: ${errorData.message || "An error occurred"}`);
+                }
+            } catch (error) {
+                console.error("Error uploading image:", error);
+                alert(`An error occurred while uploading the file: ${error}`);
+            }
+        }
+
+        try {
+            const response = await fetch(`/api/album/${albumId}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ id: albumId, key: albumKey, files: [...album.files, ...uploadedFiles] })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            album.files = [...album.files, ...uploadedFiles];
+
+            const storedAlbums = JSON.parse(localStorage.getItem("uploadedAlbums") || "[]");
+            const albumIndex = storedAlbums.findIndex(album => album.id === albumId);
+            if (albumIndex !== -1) {
+                storedAlbums[albumIndex].files = [...storedAlbums[albumIndex].files, ...uploadedFiles];
+                localStorage.setItem("uploadedAlbums", JSON.stringify(storedAlbums));
+            }
+        } catch (error) {
+            console.error("Error updating album:", error);
+        }
     }
 
     async function deleteAlbum() {
