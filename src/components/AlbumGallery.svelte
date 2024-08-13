@@ -10,7 +10,6 @@
     async function fetchAlbumData() {
         try {
             const response = await fetch(`/api/album/${albumId}`);
-            
             if (response.ok) {
                 album = await response.json();
                 checkOwnership();
@@ -21,20 +20,22 @@
             }
         } catch (error) {
             console.error("Error fetching album data:", error);
-        }
-        finally {
+        } finally {
             loading = false;
         }
     }
 
     function checkOwnership() {
-        const storedAlbums = JSON.parse(localStorage.getItem("uploadedAlbums") || "[]");
-
+        const storedAlbums = getStoredAlbums();
         const storedAlbum = storedAlbums.find(album => album.id === albumId);
         if (storedAlbum) {
             isOwner = true;
             albumKey = storedAlbum.key;
         }
+    }
+
+    function getStoredAlbums() {
+        return JSON.parse(localStorage.getItem("uploadedAlbums") || "[]");
     }
 
     onMount(fetchAlbumData);
@@ -50,34 +51,32 @@
     }
 
     async function deleteAlbum() {
-        if (confirm("Are you sure you want to delete this album? This action cannot be undone.")) {
-            try {
-                const storedAlbums = JSON.parse(localStorage.getItem("uploadedAlbums")) || [];
-                const albumData = storedAlbums.find((a) => a.id === albumId);
+        if (!confirm("Are you sure you want to delete this album? This action cannot be undone.")) return;
 
-                if (albumData) {
-                    const response = await fetch(`/api/delete?albumId=${albumId}`, {
-                        method: "DELETE",
-                        headers: {
-                            "Content-Type": "application/json"
-                        },
-                        body: JSON.stringify({ albumKey })
-                    });
+        try {
+            const storedAlbums = getStoredAlbums();
+            const albumData = storedAlbums.find((a) => a.id === albumId);
 
-                    if (!response.ok) {
-                        console.error("Failed to delete album");
-                        console.error(response); // not the best way but whatever
-                        return;
-                    }
+            if (albumData) {
+                const response = await fetch(`/api/delete?albumId=${albumId}`, {
+                    method: "DELETE",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ albumKey })
+                });
 
-                    storedAlbums.splice(storedAlbums.indexOf(albumData), 1);
-                    localStorage.setItem("uploadedAlbums", JSON.stringify(storedAlbums));
-                    window.location.href = "/";
+                if (!response.ok) {
+                    console.error("Failed to delete album", response);
+                    return;
                 }
+
+                const updatedAlbums = storedAlbums.filter(a => a.id !== albumId);
+                localStorage.setItem("uploadedAlbums", JSON.stringify(updatedAlbums));
+                window.location.href = "/";
             }
-            catch (error) {
-                console.error("Error deleting album:", error);
-            }
+        } catch (error) {
+            console.error("Error deleting album:", error);
         }
     }
 </script>

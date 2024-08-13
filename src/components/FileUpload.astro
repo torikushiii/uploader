@@ -32,38 +32,35 @@ import { ALLOWED_FILE_TYPES } from "utils/constants";
     import { ALLOWED_FILE_TYPES, MAX_FILE_SIZE } from "utils/constants";
     import { generateRandomString } from "utils/helpers";
 
-    const dropArea = document.getElementById("dropArea") as HTMLDivElement;
-    const pasteArea = document.getElementById("pasteArea") as HTMLDivElement;
-    const fileInput = document.getElementById("fileInput") as HTMLInputElement;
-    const uploadForm = document.getElementById("uploadForm") as HTMLFormElement;
-    const previewContainer = document.getElementById("previewContainer") as HTMLDivElement;
-    const progressBar = document.getElementById("progressBar") as HTMLDivElement;
-    const progressBarFill = document.getElementById("progressBarFill") as HTMLDivElement;
-    const uploadStatus = document.getElementById("uploadStatus") as HTMLDivElement;
-    const fileError = document.getElementById("fileError") as HTMLDivElement;
-
-    let selectedFile: File | null = null;
+    const elements = {
+        dropArea: document.getElementById("dropArea") as HTMLDivElement,
+        pasteArea: document.getElementById("pasteArea") as HTMLDivElement,
+        fileInput: document.getElementById("fileInput") as HTMLInputElement,
+        uploadForm: document.getElementById("uploadForm") as HTMLFormElement,
+        previewContainer: document.getElementById("previewContainer") as HTMLDivElement,
+        progressBar: document.getElementById("progressBar") as HTMLDivElement,
+        progressBarFill: document.getElementById("progressBarFill") as HTMLDivElement,
+        uploadStatus: document.getElementById("uploadStatus") as HTMLDivElement,
+        fileError: document.getElementById("fileError") as HTMLDivElement
+    };
 
     interface ProgressFetchOptions extends Omit<RequestInit, "body"> {
         onUploadProgress?: (progressEvent: ProgressEvent) => void;
         body?: XMLHttpRequestBodyInit | null;
     }
 
-    async function progressFetch(url: string, options: ProgressFetchOptions): Promise<Response> {
-        return new Promise((resolve, reject) => {
+    const progressFetch = (url: string, options: ProgressFetchOptions): Promise<Response> => 
+        new Promise((resolve, reject) => {
             const xhr = new XMLHttpRequest();
             xhr.open(options.method || "GET", url);
 
-            for (const key in options.headers) {
-                xhr.setRequestHeader(key, options.headers[key]);
-            }
+            Object.entries(options.headers || {}).forEach(([key, value]) => 
+                xhr.setRequestHeader(key, value));
 
-            xhr.onload = () => {
-                resolve(new Response(xhr.responseText, {
-                    status: xhr.status,
-                    statusText: xhr.statusText,
-                }));
-            };
+            xhr.onload = () => resolve(new Response(xhr.responseText, {
+                status: xhr.status,
+                statusText: xhr.statusText,
+            }));
 
             xhr.onerror = reject;
 
@@ -73,234 +70,205 @@ import { ALLOWED_FILE_TYPES } from "utils/constants";
 
             xhr.send(options.body || null);
         });
-    }
 
-    function handleFile(files: FileList): void {
-        previewContainer.innerHTML = "";
-        fileError.textContent = "";
+    const handleFile = (files: FileList): void => {
+        elements.previewContainer.innerHTML = "";
+        elements.fileError.textContent = "";
 
-        for (let i = 0; i < files.length; i++) {
-            const file = files[i];
+        Array.from(files).forEach(file => {
             const validationResult = validateFile(file, ALLOWED_FILE_TYPES, MAX_FILE_SIZE);
             if (validationResult.valid) {
-                previewFile(file, previewContainer);
+                previewFile(file, elements.previewContainer);
             } else {
-                fileError.textContent = validationResult.error || "Unknown error";
+                elements.fileError.textContent = validationResult.error || "Unknown error";
             }
-        }
-    }
+        });
+    };
 
     const handleDragEvent = (e: Event) => {
         e.preventDefault();
         e.stopPropagation();
-    
-        switch (e.type) {
-            case "dragenter":
-                dropArea.classList.remove("hidden");
-                break;
-            case "dragleave":
-                if (e.target === dropArea) {
-                    dropArea.classList.add("hidden");
-                }
-                break;
-            case "drop":
-                dropArea.classList.add("hidden");
-                const files = (e as DragEvent).dataTransfer?.files;
-                if (files) {
-                    const dataTransfer = new DataTransfer();
-                    for (let i = 0; i < files.length; i++) {
-                        dataTransfer.items.add(files[i]);
-                    }
 
-                    fileInput.files = dataTransfer.files;
-                    handleFile(files);
-                }
-                break;
+        const { dropArea } = elements;
+        
+        if (e.type === "dragenter") {
+            dropArea.classList.remove("hidden");
+        } else if (e.type === "dragleave" && e.target === dropArea) {
+            dropArea.classList.add("hidden");
+        } else if (e.type === "drop") {
+            dropArea.classList.add("hidden");
+            const files = (e as DragEvent).dataTransfer?.files;
+            if (files) {
+                elements.fileInput.files = files;
+                handleFile(files);
+            }
         }
     };
-    
-    ["dragenter", "dragover", "dragleave", "drop"].forEach(eventType => {
-        document.addEventListener(eventType, handleDragEvent as EventListener);
-    });
 
-    document.addEventListener("paste", async (e: ClipboardEvent) => {
+    const handlePaste = async (e: ClipboardEvent) => {
         e.preventDefault();
-
         const items = e.clipboardData?.items;
-        if (items) {
-            for (let i = 0; i < items.length; i++) {
-                if (items[i].type.indexOf("image") !== -1 || items[i].type.indexOf("video") !== -1) {
-                    const file = items[i].getAsFile();
-                    if (file) {
-                        const validationResult = validateFile(file, ALLOWED_FILE_TYPES, MAX_FILE_SIZE);
-                        if (validationResult.valid) {
-                            const dataTransfer = new DataTransfer();
-                            dataTransfer.items.add(file);
-                            const files = dataTransfer.files;
-                            if (files) {
-                                await uploadFile(files);
-                            }
-                        } else {
-                            fileError.textContent = validationResult.error || "Unknown error";
-                        }
-                        break;
+        if (!items) return;
+
+        for (const item of Array.from(items)) {
+            if (item.type.startsWith("image/") || item.type.startsWith("video/")) {
+                const file = item.getAsFile();
+                if (file) {
+                    const validationResult = validateFile(file, ALLOWED_FILE_TYPES, MAX_FILE_SIZE);
+                    if (validationResult.valid) {
+                        await uploadFile([file]);
+                    } else {
+                        elements.fileError.textContent = validationResult.error || "Unknown error";
                     }
+                    break;
                 }
             }
         }
-    });
+    };
 
-    pasteArea.addEventListener("click", () => {
-        fileInput.click();
-    });
-
-    fileInput.addEventListener("change", (e: Event) => {
-        const target = e.target as HTMLInputElement;
-        const files = target.files;
-        if (files) {
-            handleFile(files);
-        }
-    });
-
-    uploadForm.addEventListener("submit", async (event: Event) => {
-        event.preventDefault();
-        const files = fileInput.files;
-        if (files && files.length > 0) {
-            await uploadFile(files);
-        } else {
-            fileError.textContent = "Please select a valid file to upload.";
-        }
-    });
-
-    async function uploadFile(files: FileList) {
+    const uploadFile = async (files: File[] | FileList) => {
         if (files.length > 1) {
-            let hasImage = false;
-            let hasVideo = false;
-
-            for (let i = 0; i < files.length; i++) {
-                const fileType = files[i].type;
-                if (fileType.startsWith("image/")) {
-                    hasImage = true;
-                } else if (fileType.startsWith("video/")) {
-                    hasVideo = true;
-                }
-            }
+            const fileTypes = Array.from(files).map(file => file.type);
+            const hasVideo = fileTypes.some(type => type.startsWith("video/"));
+            const hasImage = fileTypes.some(type => type.startsWith("image/"));
 
             if (hasVideo && files.length > 1) {
-                fileError.textContent = "You cannot upload more than one video at a time.";
+                elements.fileError.textContent = "You cannot upload more than one video at a time.";
                 return;
             }
 
             if (hasVideo && hasImage) {
-                fileError.textContent = "You cannot upload videos with images. Please upload videos separately.";
+                elements.fileError.textContent = "You cannot upload videos with images. Please upload videos separately.";
                 return;
             }
 
             if (files.length > 4) {
-                fileError.textContent = "You can only upload up to 4 images in an album.";
+                elements.fileError.textContent = "You can only upload up to 4 images in an album.";
                 return;
             }
         }
 
-        uploadStatus.textContent = "Uploading...";
-        progressBar.style.display = "block";
-        progressBarFill.style.width = "0%";
+        elements.uploadStatus.textContent = "Uploading...";
+        elements.progressBar.style.display = "block";
+        elements.progressBarFill.style.width = "0%";
 
         if (files.length === 1) {
-            const file = files[0];
+            await uploadSingleFile(files[0]);
+        } else {
+            await uploadAlbum(files);
+        }
+
+        elements.uploadStatus.textContent = "";
+        elements.progressBar.style.display = "none";
+    };
+
+    const uploadSingleFile = async (file: File) => {
+        const formData = new FormData();
+        formData.append("file", file);
+
+        try {
+            const response = await progressFetch("/api/upload", {
+                method: "POST",
+                body: formData,
+                onUploadProgress: updateProgressBar
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                updateLocalStorage("uploadedFiles", data);
+                window.location.href = data.link;
+            } else {
+                const errorData = await response.json();
+                elements.fileError.textContent = errorData.error || "An error occurred during upload.";
+            }
+        } catch (error) {
+            elements.fileError.textContent = "An error occurred during upload.";
+        }
+    };
+
+    const uploadAlbum = async (files: File[] | FileList) => {
+        const albumId = generateRandomString(8);
+        const albumKey = generateRandomString(16);
+        const uploadedFiles: any[] = [];
+
+        for (const file of Array.from(files)) {
             const formData = new FormData();
             formData.append("file", file);
+            formData.append("albumId", albumId);
 
             try {
                 const response = await progressFetch("/api/upload", {
                     method: "POST",
                     body: formData,
-                    onUploadProgress: (progressEvent) => {
-                        if (progressEvent.lengthComputable) {
-                            const percentComplete = (progressEvent.loaded / progressEvent.total) * 100;
-                            progressBarFill.style.width = percentComplete + "%";
-                        }
-                    }
+                    onUploadProgress: updateProgressBar
                 });
 
                 if (response.ok) {
                     const data = await response.json();
-
-                    const storedFiles = localStorage.getItem("uploadedFiles");
-                    const files = storedFiles ? JSON.parse(storedFiles) : [];
-                    files.push(data);
-                    localStorage.setItem("uploadedFiles", JSON.stringify(files));
-
-                    window.location.href = data.link;
+                    uploadedFiles.push(data);
                 } else {
                     const errorData = await response.json();
-                    fileError.textContent = errorData.error || "An error occurred during upload.";
+                    elements.fileError.textContent = errorData.error || "An error occurred during upload.";
                 }
             } catch (error) {
-                fileError.textContent = "An error occurred during upload.";
-            } finally {
-                uploadStatus.textContent = "";
-                progressBar.style.display = "none";
+                elements.fileError.textContent = "An error occurred during upload.";
             }
-        } else {
-            const albumId = generateRandomString(8);
-            const albumKey = generateRandomString(16);
-            const uploadedFiles: any[] = [];
-
-            for (let i = 0; i < files.length; i++) {
-                const file = files[i];
-                const formData = new FormData();
-                formData.append("file", file);
-                formData.append("albumId", albumId);
-
-                try {
-                    const response = await progressFetch("/api/upload", {
-                        method: "POST",
-                        body: formData,
-                        onUploadProgress: (progressEvent) => {
-                            if (progressEvent.lengthComputable) {
-                                const percentComplete = (progressEvent.loaded / progressEvent.total) * 100;
-                                progressBarFill.style.width = percentComplete + "%";
-                            }
-                        }
-                    });
-
-                    if (response.ok) {
-                        const data = await response.json();
-                        uploadedFiles.push(data);
-                    } else {
-                        const errorData = await response.json();
-                        fileError.textContent = errorData.error || "An error occurred during upload.";
-                    }
-                } catch (error) {
-                    fileError.textContent = "An error occurred during upload.";
-                }
-            }
-
-            const storedAlbums = localStorage.getItem("uploadedAlbums") || "[]";
-            const albums = JSON.parse(storedAlbums);
-            albums.push({ id: albumId, key: albumKey, files: uploadedFiles });
-            localStorage.setItem("uploadedAlbums", JSON.stringify(albums));
-
-            try {
-                const response = await fetch(`/api/album/${albumId}`, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({ id: albumId, key: albumKey, files: uploadedFiles })
-                });
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-            } catch (error) {
-                console.error("Error saving album:", error);
-            }
-
-            window.location.href = `/a/${albumId}`;
         }
-    }
+
+        updateLocalStorage("uploadedAlbums", { id: albumId, key: albumKey, files: uploadedFiles });
+
+        try {
+            const response = await fetch(`/api/album/${albumId}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ id: albumId, key: albumKey, files: uploadedFiles })
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+        } catch (error) {
+            console.error("Error saving album:", error);
+        }
+
+        window.location.href = `/a/${albumId}`;
+    };
+
+    const updateProgressBar = (progressEvent: ProgressEvent) => {
+        if (progressEvent.lengthComputable) {
+            const percentComplete = (progressEvent.loaded / progressEvent.total) * 100;
+            elements.progressBarFill.style.width = `${percentComplete}%`;
+        }
+    };
+
+    const updateLocalStorage = (key: string, data: any) => {
+        const storedData = JSON.parse(localStorage.getItem(key) || "[]");
+        storedData.push(data);
+        localStorage.setItem(key, JSON.stringify(storedData));
+    };
+
+    // Event Listeners
+    ["dragenter", "dragover", "dragleave", "drop"].forEach(eventType => 
+        document.addEventListener(eventType, handleDragEvent as EventListener));
+
+    document.addEventListener("paste", handlePaste);
+
+    elements.pasteArea.addEventListener("click", () => elements.fileInput.click());
+
+    elements.fileInput.addEventListener("change", (e: Event) => {
+        const files = (e.target as HTMLInputElement).files;
+        if (files) handleFile(files);
+    });
+
+    elements.uploadForm.addEventListener("submit", async (event: Event) => {
+        event.preventDefault();
+        const files = elements.fileInput.files;
+        if (files && files.length > 0) {
+            await uploadFile(files);
+        } else {
+            elements.fileError.textContent = "Please select a valid file to upload.";
+        }
+    });
 </script>
 
 <style>

@@ -4,6 +4,7 @@
     import { loadComponent } from "utils/component-loader";
 
     const DOMAIN = window.location.origin;
+    
     interface FileInfo {
         id: string;
         name: string;
@@ -18,133 +19,70 @@
         thumbnail?: string;
     }
 
-    export let initialFiles = [];
-    let files: FileInfo[] = initialFiles;
+    export const initialFiles: FileInfo[] = [];
 
+    let files: FileInfo[] = [];
     let selectedImage: FileInfo | null = null;
     let isModalOpen = false;
     let ImageModal: any;
 
-    onMount(() => loadFiles());
+    onMount(loadFiles);
 
     function loadFiles() {
-        if (!localStorage.getItem("uploadedFiles")) {
-            localStorage.setItem("uploadedFiles", JSON.stringify([]));
-        }
+        const storedFiles = JSON.parse(localStorage.getItem("uploadedFiles") || "[]");
+        const storedAlbums = JSON.parse(localStorage.getItem("uploadedAlbums") || "[]");
 
-        if (!localStorage.getItem("uploadedAlbums")) {
-            localStorage.setItem("uploadedAlbums", JSON.stringify([]));
-        }
+        files = [
+            ...storedFiles,
+            ...storedAlbums.map(album => ({
+                id: album.id,
+                name: album.id,
+                ext: "",
+                embed: "",
+                timestamp: album.files[0]?.timestamp || 0,
+                type: "album",
+                key: album.id,
+                link: `/a/${album.id}`,
+                delete: `/api/delete?albumId=${album.id}`,
+                albumId: album.id,
+                thumbnail: album.files[0]?.link || ""
+            }))
+        ].sort((a, b) => b.timestamp - a.timestamp);
+    }
 
-        const storedFiles = localStorage.getItem("uploadedFiles");
-        if (storedFiles) {
-            files = JSON.parse(storedFiles);
-            files.sort((a, b) => b.timestamp - a.timestamp);
-        }
+    function removeFile(fileToRemove: FileInfo) {
+        const storageKey = fileToRemove.type === "album" ? "uploadedAlbums" : "uploadedFiles";
+        const storedItems = JSON.parse(localStorage.getItem(storageKey) || "[]");
+        const updatedItems = storedItems.filter(item => 
+            fileToRemove.type === "album" ? item.id !== fileToRemove.id : item.key !== fileToRemove.key
+        );
+        localStorage.setItem(storageKey, JSON.stringify(updatedItems));
+        files = files.filter(file => file !== fileToRemove);
+    }
 
-        const storedAlbums = localStorage.getItem("uploadedAlbums");
-        if (storedAlbums) {
-            const albums = JSON.parse(storedAlbums);
-            albums.forEach(album => {
-                const thumbnailUrl = album.files.length > 0 ? album.files[0].link : "";
-                files.push({
-                    id: album.id,
-                    name: album.id,
-                    ext: "",
-                    embed: "",
-                    timestamp: album.files[0].timestamp,
-                    type: "album",
-                    key: album.id,
-                    link: `/a/${album.id}`,
-                    delete: `/api/delete?albumId=${album.id}`,
-                    albumId: album.id,
-                    thumbnail: thumbnailUrl
-                });
+    async function deleteFile(file: FileInfo) {
+        if (!confirm("Are you sure you want to delete this file? This action cannot be undone.")) return;
+
+        try {
+            const response = await fetch(file.delete, {
+                method: "DELETE",
+                headers: file.type === "album" ? { "Content-Type": "application/json" } : {},
+                body: file.type === "album" ? JSON.stringify({ albumKey: file.key }) : undefined
             });
-        }
 
-        files.sort((a, b) => b.timestamp - a.timestamp);
-    }
-
-    function removeFile(index: number) {
-        const file = files[index];
-
-        if (file.type === "album") {
-            files = files.filter((_, i) => i !== index);
-
-            const storedAlbums = localStorage.getItem("uploadedAlbums") || "[]";
-            const albums = JSON.parse(storedAlbums);
-            const updatedAlbums = albums.filter(album => album.id !== file.id);
-            localStorage.setItem("uploadedAlbums", JSON.stringify(updatedAlbums));
-        } else {
-            files = files.filter((_, i) => i !== index);
-
-            const storedFiles = localStorage.getItem("uploadedFiles") || "[]";
-            const filesInLocalStorage = JSON.parse(storedFiles);
-            const updatedFiles = filesInLocalStorage.filter(f => f.key !== file.key);
-            localStorage.setItem("uploadedFiles", JSON.stringify(updatedFiles));
-        }
-    }
-
-    async function deleteFile(file: FileInfo, index: number) {
-        if (confirm("Are you sure you want to delete this file? This action cannot be undone.")) {
-            try {
-                if (file.type === "album") {
-                    const storedAlbums = localStorage.getItem("uploadedAlbums") || "[]";
-                    const albums = JSON.parse(storedAlbums);
-                    const album = albums.find(a => a.id === file.id);
-
-                    const response = await fetch(file.delete, {
-                        method: "DELETE",
-                        headers: {
-                            "Content-Type": "application/json"
-                        },
-                        body: JSON.stringify({ albumKey: album.key })
-                    });
-
-                    if (response.ok) {
-                        const storedAlbums = localStorage.getItem("uploadedAlbums") || "[]";
-                        const albums = JSON.parse(storedAlbums);
-                        const updatedAlbums = albums.filter(a => a.id !== file.id);
-                        localStorage.setItem("uploadedAlbums", JSON.stringify(updatedAlbums));
-
-                        removeFile(index);
-                        loadFiles();
-                    }
-                    else {
-                        const errorData = await response.json();
-                        alert(`Request failed with status ${response.status}: ${errorData.message || "An error occurred"}`);
-                    }
-                }
-                else {
-                    const response = await fetch(file.delete, {
-                        method: "DELETE"
-                    });
-
-                    if (response.ok) {
-                        const storedFiles = localStorage.getItem("uploadedFiles") || "[]";
-                        const files = JSON.parse(storedFiles);
-                        const updatedFiles = files.filter(f => f.key !== file.key);
-                        localStorage.setItem("uploadedFiles", JSON.stringify(updatedFiles));
-
-                        removeFile(index);
-                        loadFiles();
-                    }
-                    else {
-                        const errorData = await response.json();
-                        alert(`Request failed with status ${response.status}: ${errorData.message || "An error occurred"}`);
-                    }
-                }
-            } catch (error) {
-                console.log(error)
-                alert(`An error occurred while deleting the file: ${error}`);
+            if (response.ok) {
+                removeFile(file);
+            } else {
+                const errorData = await response.json();
+                alert(`Request failed: ${errorData.message || "An error occurred"}`);
             }
-            finally {
-                location.reload();
-            }
+        } catch (error) {
+            console.error(error);
+            alert(`An error occurred while deleting the file: ${error}`);
+        } finally {
+            location.reload();
         }
     }
-
 
     function truncateFilename(name: string, maxLength: number = 20): string {
         if (name.length <= maxLength) return name;
@@ -155,9 +93,7 @@
 
     async function openModal(file: FileInfo) {
         if (file.type.startsWith("image/")) {
-            if (!ImageModal) {
-                ImageModal = await loadComponent(() => import("./ImageModal.svelte"));
-            }
+            ImageModal = ImageModal || await loadComponent(() => import("./ImageModal.svelte"));
             selectedImage = file;
             isModalOpen = true;
         }
@@ -168,18 +104,13 @@
         selectedImage = null;
     }
 
-    function copyLink(link: string) {
-        navigator.clipboard.writeText(link)
-            .catch(err => console.error("Error copying link: ", err));
-    }
+    const copyLink = (link: string) => navigator.clipboard.writeText(link).catch(console.error);
 
     function downloadFile(link: string, fileName: string) {
         const a = document.createElement("a");
         a.href = link;
         a.download = fileName;
-        document.body.appendChild(a);
         a.click();
-        document.body.removeChild(a);
     }
 </script>
 
@@ -201,8 +132,8 @@
                         <span class="album-label">Album</span>
                     </div>
                 {:else if file.type.startsWith("image/")}
-                <!-- svelte-ignore a11y-click-events-have-key-events -->
-                <!-- svelte-ignore a11y-no-static-element-interactions -->
+                    <!-- svelte-ignore a11y-click-events-have-key-events -->
+                    <!-- svelte-ignore a11y-no-static-element-interactions -->
                     <div class="image-container" on:click={() => openModal(file)}>
                         <LazyImage src={file.link} alt={file.name} />
                     </div>
@@ -217,28 +148,24 @@
                     </div>
                 {/if}
                 <div class="file-info">
-                    <span title={file.name + file.ext}
-                        >{truncateFilename(file.name + file.ext)}</span
-                    >
+                    <span title={file.name + file.ext}>{truncateFilename(file.name + file.ext)}</span>
                     <span>{new Date(file.timestamp).toLocaleString()}</span>
                 </div>
                 <div class="file-actions">
-                    <div class="file-actions">
-                        <button class="icon-button copy" on:click={() => copyLink(file.type === "album" ? `${DOMAIN}${file.link}` : file.link)} title="Copy Link">
-                            <img src="/assets/copy.svg" alt="Copy" width="18" height="18" />
+                    <button class="icon-button copy" on:click={() => copyLink(file.type === "album" ? `${DOMAIN}${file.link}` : file.link)} title="Copy Link">
+                        <img src="/assets/copy.svg" alt="Copy" width="18" height="18" />
+                    </button>
+                    {#if file.type !== "album"}
+                        <button class="icon-button download" on:click={() => downloadFile(file.link, file.name + file.ext)} title="Download">
+                            <img src="/assets/download.svg" alt="Download" width="18" height="18" />
                         </button>
-                        {#if file.type !== "album"}
-                            <button class="icon-button download" on:click={() => downloadFile(file.link, file.name + file.ext)} title="Download">
-                                <img src="/assets/download.svg" alt="Download" width="18" height="18" />
-                            </button>
-                        {/if}
-                        <button class="icon-button newtab" on:click={() => window.open(file.link, "_blank")} title="Open in new tab">
-                            <img src="/assets/newtab.svg" alt="Open in new tab" width="18" height="18" />
-                        </button>
-                        <button class="icon-button delete" on:click={() => deleteFile(file, index)} title="Delete">
-                            <img src="/assets/delete.svg" alt="Delete" width="18" height="18" />
-                        </button>
-                    </div>
+                    {/if}
+                    <button class="icon-button newtab" on:click={() => window.open(file.link, "_blank")} title="Open in new tab">
+                        <img src="/assets/newtab.svg" alt="Open in new tab" width="18" height="18" />
+                    </button>
+                    <button class="icon-button delete" on:click={() => deleteFile(file)} title="Delete">
+                        <img src="/assets/delete.svg" alt="Delete" width="18" height="18" />
+                    </button>
                 </div>
             </div>
         {/each}
