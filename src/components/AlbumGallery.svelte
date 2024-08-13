@@ -89,11 +89,16 @@
             }
         }
 
+        const filteredFiles = uploadedFiles.map(file => {
+            const { id, albumId, ext, name, type, link, timestamp } = file;
+            return { id, albumId, ext, name, type, link, timestamp };
+        });
+
         try {
             const response = await fetch(`/api/album/${albumId}`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ id: albumId, key: albumKey, files: [...album.files, ...uploadedFiles] })
+                body: JSON.stringify({ id: albumId, key: albumKey, files: [...album.files, ...filteredFiles] })
             });
 
             if (!response.ok) {

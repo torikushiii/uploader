@@ -32,8 +32,11 @@ export const GET: APIRoute = async ({ params, locals }) => {
         }
 
         const albumData = await albumObject.text();
+        const albumFiles = JSON.parse(albumData);
 
-        return new Response(albumData, {
+        const res = JSON.stringify({ id: albumId, files: albumFiles.files });
+
+        return new Response(res, {
             status: 200,
             headers: { "Content-Type": "application/json" }
         });

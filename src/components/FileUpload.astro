@@ -215,13 +215,19 @@ import { ALLOWED_FILE_TYPES } from "utils/constants";
             }
         }
 
+        const filteredFiles = uploadedFiles.map(file => {
+            const { id, albumId, ext, name, type, link, timestamp } = file;
+            return { id, albumId, ext, name, type, link, timestamp };
+        });
+
+        // local storage still store all the metadata
         updateLocalStorage("uploadedAlbums", { id: albumId, key: albumKey, files: uploadedFiles });
 
         try {
             const response = await fetch(`/api/album/${albumId}`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ id: albumId, key: albumKey, files: uploadedFiles })
+                body: JSON.stringify({ id: albumId, key: albumKey, files: filteredFiles })
             });
             
             if (!response.ok) {
