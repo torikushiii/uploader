@@ -35,26 +35,26 @@ const domain = Astro.url.origin;
                 
                 <h3>Upload Response Example</h3>
                 <pre><code>{`{
-        "id": "abcd1",
-        "ext": ".jpg",
-        "name": "example",
-        "type": "image/jpeg",
-        "key": "randomkey123456",
-        "link": "${domain}/abcd1.jpg",
-        "delete": "${domain}/api/delete?key=randomkey123456",
-        "embed": "${domain}/v/abcd1",
-        "width": 1920,
-        "height": 1080,
-        "timestamp": 1628097600000
-    }`}</code></pre>
+    "id": "abcd1",
+    "ext": ".jpg",
+    "name": "example",
+    "type": "image/jpeg",
+    "key": "randomkey123456",
+    "link": "${domain}/abcd1.jpg",
+    "delete": "${domain}/api/delete?key=randomkey123456",
+    "embed": "${domain}/v/abcd1",
+    "width": 1920,
+    "height": 1080,
+    "timestamp": 1628097600000
+}`}</code></pre>
     
                 <h3>Deleting an Image</h3>
                 <pre><code>curl -X GET "{domain}/api/delete?key=randomkey123456"</code></pre>
     
                 <h3>Delete Response Example</h3>
                 <pre><code>{`{
-        "message": "File deleted successfully"
-    }`}</code></pre>
+    "message": "File deleted successfully"
+}`}</code></pre>
             </section>
         </div>
     </CenteredBody>
