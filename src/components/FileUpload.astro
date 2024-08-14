@@ -176,6 +176,9 @@ import { ALLOWED_FILE_TYPES } from "utils/constants";
             if (response.ok) {
                 const data = await response.json();
                 updateLocalStorage("uploadedFiles", data);
+                
+                await navigator.clipboard.writeText(data.link);
+
                 window.location.href = data.link;
             } else {
                 const errorData = await response.json();
