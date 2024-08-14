@@ -55,6 +55,19 @@
         fileInput.addEventListener("change", async (event) => {
             const files = event.target.files;
             if (files) {
+                const storedAlbums = getStoredAlbums();
+                const albumIndex = storedAlbums.findIndex(album => album.id === albumId);
+                if (albumIndex === -1) {
+                    alert("Failed to find album data. Please refresh the page and try again.");
+                    return;
+                }
+
+                const albumData = storedAlbums[albumIndex];
+                if (albumData.files.length >= 10) {
+                    alert("You can only upload up to 10 images per album.");
+                    return;
+                }
+
                 await uploadMoreImages(files);
             }
         });
